@@ -1,0 +1,64 @@
+const requiredEnvVars = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "OPENAI_API_KEY"
+];
+
+function readEnv(name, { required = false, fallback = undefined } = {}) {
+  const value = process.env[name] ?? fallback;
+  if (required && (!value || value.trim() === "")) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+export function validateEnv() {
+  for (const name of requiredEnvVars) {
+    readEnv(name, { required: true });
+  }
+}
+
+export const env = {
+  get supabaseUrl() {
+    return readEnv("SUPABASE_URL");
+  },
+  get supabaseAnonKey() {
+    return readEnv("SUPABASE_ANON_KEY");
+  },
+  get supabaseServiceRoleKey() {
+    return readEnv("SUPABASE_SERVICE_ROLE_KEY");
+  },
+  get supabaseDbPassword() {
+    return readEnv("SUPABASE_DB_PASSWORD");
+  },
+  get openAiApiKey() {
+    return readEnv("OPENAI_API_KEY");
+  },
+  get openAiModelCriador() {
+    return readEnv("OPENAI_MODEL_CRIADOR", { fallback: "gpt-5.4-2026-03-05" });
+  },
+  get openAiModelCliente() {
+    return readEnv("OPENAI_MODEL_CLIENTE", { fallback: "gpt-4o" });
+  },
+  get openAiModelModerador() {
+    return readEnv("OPENAI_MODEL_MODERADOR", { fallback: "gpt-4.1-mini" });
+  },
+  get openAiModelIntencao() {
+    return readEnv("OPENAI_MODEL_INTENCAO", { fallback: "gpt-4.1-mini" });
+  },
+  get openAiModelGerente() {
+    return readEnv("OPENAI_MODEL_GERENTE", { fallback: "gpt-5-mini" });
+  },
+  get appSessionSecret() {
+    return readEnv("APP_SESSION_SECRET", { fallback: "change-me" });
+  },
+  get appSessionTtlHours() {
+    return Number(readEnv("APP_SESSION_TTL_HOURS", { fallback: "24" }));
+  },
+  get authCodeTtlMinutes() {
+    return Number(readEnv("AUTH_CODE_TTL_MINUTES", { fallback: "15" }));
+  },
+  get appBaseUrl() {
+    return readEnv("APP_BASE_URL", { fallback: "http://localhost:3000" });
+  }
+};

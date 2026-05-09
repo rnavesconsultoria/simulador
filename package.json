@@ -1,0 +1,31 @@
+{
+  "name": "simulador-rnaves",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "legacy:api": "node src/server.js",
+    "supabase:init": "supabase init",
+    "supabase:login": "supabase login",
+    "supabase:link": "supabase link",
+    "supabase:db:push": "supabase db push",
+    "supabase:db:pull": "supabase db pull",
+    "supabase:db:seed": "supabase db query --linked --file supabase/seed.sql",
+    "supabase:types": "supabase gen types typescript --linked",
+    "scenario:smoke": "node src/scripts/scenario-smoke.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "dotenv": "^16.6.1",
+    "next": "^15.3.2",
+    "openai": "^4.104.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "supabase": "^2.98.2"
+  }
+}

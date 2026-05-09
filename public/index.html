@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RNaves Simulador</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">RN</div>
+          <div>
+            <p class="eyebrow">RNaves Consultoria</p>
+            <h1>Simulador</h1>
+          </div>
+        </div>
+
+        <div class="status-card">
+          <p class="eyebrow">Ambiente</p>
+          <p class="status-text" id="health-status">Verificando API...</p>
+        </div>
+
+        <div class="status-card">
+          <p class="eyebrow">Sessão</p>
+          <p class="status-text" id="session-status">Aguardando autenticação</p>
+        </div>
+
+        <div class="status-card">
+          <p class="eyebrow">Simulação</p>
+          <p class="status-text" id="simulation-status">Nenhuma simulação ativa</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="hero">
+          <div>
+            <p class="eyebrow">Validação do novo stack</p>
+            <h2>Fluxo completo do simulador em paralelo ao legado</h2>
+            <p class="hero-copy">
+              Autentique, gere um cenário, conduza a conversa, produza o relatório do gerente e registre o feedback final.
+            </p>
+          </div>
+          <button class="ghost-button" id="reset-app">Limpar sessão</button>
+        </section>
+
+        <section class="grid">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">1. Acesso</p>
+                <h3>Entrar no simulador</h3>
+              </div>
+            </div>
+
+            <form id="request-code-form" class="stack">
+              <label class="field">
+                <span>E-mail</span>
+                <input id="email-input" type="email" placeholder="voce@empresa.com" required />
+              </label>
+              <button type="submit" class="primary-button">Enviar código</button>
+            </form>
+
+            <form id="verify-code-form" class="stack compact hidden">
+              <label class="field">
+                <span>Código</span>
+                <input id="code-input" type="text" placeholder="000000" required />
+              </label>
+              <button type="submit" class="primary-button">Validar código</button>
+            </form>
+
+            <div class="notice hidden" id="dev-code-box"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">2. Cenário</p>
+                <h3>Preparar simulação</h3>
+              </div>
+              <button id="create-simulation-button" class="primary-button" disabled>Criar simulação</button>
+            </div>
+
+            <div class="scenario-box" id="scenario-box">
+              <p class="muted">Assim que a simulação for criada, o resumo do cenário aparece aqui.</p>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel full-height">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">3. Conversa</p>
+              <h3>Treino de negociação</h3>
+            </div>
+            <div class="header-actions">
+              <button id="generate-report-button" class="secondary-button" disabled>Gerar relatório</button>
+            </div>
+          </div>
+
+          <div class="chat-log" id="chat-log">
+            <div class="system-line">Aguardando criação da simulação.</div>
+          </div>
+
+          <form id="message-form" class="composer">
+            <textarea id="message-input" placeholder="Escreva a próxima fala do vendedor..." rows="3" disabled></textarea>
+            <button type="submit" class="primary-button" disabled id="send-message-button">Enviar</button>
+          </form>
+        </section>
+
+        <section class="grid">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">4. Relatório</p>
+                <h3>Leitura do gerente</h3>
+              </div>
+            </div>
+
+            <div class="report-box" id="report-box">
+              <p class="muted">O relatório final aparece aqui depois da conversa.</p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">5. Feedback</p>
+                <h3>Fechar sessão</h3>
+              </div>
+            </div>
+
+            <form id="feedback-form" class="stack hidden">
+              <div class="rating-grid">
+                <label class="field">
+                  <span>Realismo</span>
+                  <input name="realismScore" type="number" min="1" max="5" value="5" required />
+                </label>
+                <label class="field">
+                  <span>Desafio</span>
+                  <input name="challengeScore" type="number" min="1" max="5" value="4" required />
+                </label>
+                <label class="field">
+                  <span>Interação</span>
+                  <input name="interactionQualityScore" type="number" min="1" max="5" value="4" required />
+                </label>
+                <label class="field">
+                  <span>Utilidade</span>
+                  <input name="feedbackUtilityScore" type="number" min="1" max="5" value="5" required />
+                </label>
+                <label class="field">
+                  <span>Aprendizado</span>
+                  <input name="learningImpactScore" type="number" min="1" max="5" value="4" required />
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Comentário</span>
+                <textarea name="userFeedback" rows="4" placeholder="Como foi usar esta nova versão?"></textarea>
+              </label>
+
+              <button type="submit" class="primary-button">Salvar feedback</button>
+            </form>
+
+            <div class="notice" id="feedback-status">
+              O formulário de feedback será liberado depois do relatório.
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

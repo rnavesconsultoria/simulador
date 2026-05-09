@@ -1,0 +1,9 @@
+node_modules
+.next
+.vercel
+.env.local
+coverage
+dist
+build
+npm-debug.log*
+supabase/.temp
