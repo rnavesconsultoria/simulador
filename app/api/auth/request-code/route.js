@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { env } from "../../../../src/config/env.js";
 import { requestAccessCode } from "../../../../src/services/auth-service.js";
 
 function mapUser(user) {
@@ -55,7 +56,7 @@ export async function POST(request) {
         message: "Access code generated.",
         expiresAt: result.expiresAt,
         user: mapUser(result.user),
-        developmentCodePreview: process.env.NODE_ENV === "production" ? undefined : result.code
+        developmentCodePreview: process.env.NODE_ENV === "production" && !env.showDevelopmentCodePreview ? undefined : result.code
       },
       { status: 202 }
     );

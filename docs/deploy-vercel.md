@@ -43,6 +43,7 @@ OPENAI_MODEL_GERENTE=gpt-5-mini
 APP_SESSION_SECRET=
 APP_SESSION_TTL_HOURS=24
 AUTH_CODE_TTL_MINUTES=15
+SHOW_DEVELOPMENT_CODE_PREVIEW=false
 APP_BASE_URL=https://simulador-rnaves.vercel.app
 ```
 
@@ -50,6 +51,22 @@ Depois que o subdominio oficial estiver ativo, atualizar:
 
 ```env
 APP_BASE_URL=https://simulador.rnavesconsultoria.com.br
+```
+
+## Validacao interna
+
+Enquanto o envio real de codigo por email ainda nao estiver ligado, habilite temporariamente:
+
+```env
+SHOW_DEVELOPMENT_CODE_PREVIEW=true
+```
+
+Com isso, o codigo volta a aparecer na interface publicada para testes internos.
+
+Quando o simulador estiver pronto para uso real, volte para:
+
+```env
+SHOW_DEVELOPMENT_CODE_PREVIEW=false
 ```
 
 ## Checklist antes do deploy
@@ -81,4 +98,3 @@ APP_BASE_URL=https://simulador.rnavesconsultoria.com.br
 2. grupo pequeno de validacao
 3. ajustes de UX e regras
 4. troca gradual do acesso principal
-

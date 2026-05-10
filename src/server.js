@@ -2,7 +2,7 @@ import "dotenv/config";
 import dotenv from "dotenv";
 import http from "node:http";
 import { URL } from "node:url";
-import { validateEnv } from "./config/env.js";
+import { env, validateEnv } from "./config/env.js";
 import {
   createAppSession,
   findUserByAppSessionToken,
@@ -53,7 +53,7 @@ async function handleRequestCode(request, response) {
     message: "Access code generated.",
     expiresAt: result.expiresAt,
     user: mapUser(result.user),
-    developmentCodePreview: process.env.NODE_ENV === "production" ? undefined : result.code
+    developmentCodePreview: process.env.NODE_ENV === "production" && !env.showDevelopmentCodePreview ? undefined : result.code
   });
 }
 

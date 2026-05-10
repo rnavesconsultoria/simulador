@@ -12,6 +12,11 @@ function readEnv(name, { required = false, fallback = undefined } = {}) {
   return value;
 }
 
+function readBooleanEnv(name, fallback = false) {
+  const value = readEnv(name, { fallback: fallback ? "true" : "false" });
+  return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
+}
+
 export function validateEnv() {
   for (const name of requiredEnvVars) {
     readEnv(name, { required: true });
@@ -57,6 +62,9 @@ export const env = {
   },
   get authCodeTtlMinutes() {
     return Number(readEnv("AUTH_CODE_TTL_MINUTES", { fallback: "15" }));
+  },
+  get showDevelopmentCodePreview() {
+    return readBooleanEnv("SHOW_DEVELOPMENT_CODE_PREVIEW", false);
   },
   get appBaseUrl() {
     return readEnv("APP_BASE_URL", { fallback: "http://localhost:3000" });
