@@ -4,9 +4,9 @@ export const metadata = {
   title: "RNaves Simulador",
   description: "Nova interface do simulador de treinamento da RNaves.",
   icons: {
-    icon: "/Logos/Horizontal branco transp.svg",
-    shortcut: "/Logos/Horizontal branco transp.svg",
-    apple: "/Logos/Vertical branco transp.png"
+    icon: "/Logos/Horizontal%20branco.svg",
+    shortcut: "/Logos/Horizontal%20branco.svg",
+    apple: "/Logos/Vertical%20branco%20transp.png"
   }
 };
 

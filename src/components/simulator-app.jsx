@@ -25,7 +25,8 @@ const initialState = {
   activeRequest: "",
   feedbackSaved: false,
   bannerError: "",
-  chatItems: [{ kind: "system", label: "", text: "Aguardando criação da simulação." }]
+  welcomeShown: false,
+  chatItems: []
 };
 
 function loadStoredSession() {
@@ -261,6 +262,75 @@ export function SimulatorApp() {
     if (!inSimulation) setDrawerOpen(false);
   }, [inSimulation]);
 
+  const flowStep = !state.user
+    ? state.email
+      ? "awaiting_code"
+      : "awaiting_email"
+    : !state.scenario
+      ? "creating_scenario"
+      : state.report
+        ? "completed"
+        : "in_simulation";
+
+  // Welcome messages: seed the chat once after hydration based on auth state
+  useEffect(() => {
+    if (!hydrated || state.welcomeShown) return;
+    if (state.chatItems.length > 0) {
+      setState((c) => ({ ...c, welcomeShown: true }));
+      return;
+    }
+    const messages = state.user
+      ? [
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text: `Olá ${state.user.name}, que bom te ver de novo! Vou preparar um cenário de negociação especialmente para você.`
+          },
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text: "Leva apenas alguns segundos…"
+          }
+        ]
+      : [
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text: "Olá, seja bem-vindo à IA de Treinamento da RNaves Consultoria e Treinamento."
+          },
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text:
+              "Nossa Inteligência Artificial está aqui para você treinar o quanto quiser e evoluir com as avaliações dadas no final. Isso faz parte da melhoria contínua das Técnicas de Vendas Consultivas."
+          },
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text:
+              "Para ter acesso ao treinamento, sua empresa deve ter contratado o sistema e você estar cadastrado. Vamos verificar."
+          },
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text: "Por favor, digite seu e-mail:"
+          }
+        ];
+    setState((c) => ({
+      ...c,
+      welcomeShown: true,
+      chatItems: [...c.chatItems, ...messages]
+    }));
+  }, [hydrated, state.user, state.welcomeShown, state.chatItems.length]);
+
+  // Auto-create scenario once the user is authenticated
+  useEffect(() => {
+    if (!hydrated || !state.user || state.scenario || state.report) return;
+    if (state.activeRequest === "create-simulation") return;
+    handleCreateSimulation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, state.user, state.scenario, state.report, state.activeRequest]);
+
   const progress = useMemo(
     () => [
       { label: "Acesso liberado", ready: Boolean(state.sessionToken) },
@@ -288,35 +358,52 @@ export function SimulatorApp() {
   }
 
   async function handleRequestCode(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
+    const email = (emailInput || messageInput).trim().toLowerCase();
+    if (!email) return;
     clearError();
     setActiveRequest("request-code");
 
     try {
       const payload = await apiRequest("/api/auth/request-code", {
         method: "POST",
-        body: JSON.stringify({ email: emailInput.trim() })
+        body: JSON.stringify({ email })
       });
 
+      const userName = payload?.user?.name?.split(/\s+/)?.[0];
       setState((c) => ({
         ...c,
-        email: emailInput.trim(),
-        devCode: payload.developmentCodePreview ?? ""
+        email,
+        devCode: payload.developmentCodePreview ?? "",
+        chatItems: [
+          ...c.chatItems,
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text: userName
+              ? `Certo, ${userName}. Agora digite aqui o código de autenticação recebido por e-mail:`
+              : "Se o e-mail estiver cadastrado, um código foi enviado. Digite-o aqui:"
+          }
+        ]
       }));
-      pushChatItem({
-        kind: "system",
-        label: "",
-        text: "Se o e-mail estiver cadastrado, um código foi enviado."
-      });
+      setEmailInput("");
+      setMessageInput("");
     } catch (error) {
       showError(error);
+      pushChatItem({
+        kind: "assistant",
+        label: "IA R Naves",
+        text: "Não consegui validar esse e-mail agora. Tente novamente."
+      });
     } finally {
       setActiveRequest("");
     }
   }
 
   async function handleVerifyCode(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
+    const code = (codeInput || messageInput).trim().replace(/\D/g, "");
+    if (!code) return;
     clearError();
     setActiveRequest("verify-code");
 
@@ -325,7 +412,7 @@ export function SimulatorApp() {
         method: "POST",
         body: JSON.stringify({
           email: state.email,
-          code: codeInput.trim()
+          code
         })
       });
 
@@ -338,16 +425,25 @@ export function SimulatorApp() {
         ...c,
         sessionToken: payload.sessionToken,
         user: payload.user,
-        devCode: ""
+        devCode: "",
+        chatItems: [
+          ...c.chatItems,
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text: "Por favor aguarde enquanto criamos um cenário de negociação especialmente para você. Leva apenas alguns segundos."
+          }
+        ]
       }));
       setCodeInput("");
-      pushChatItem({
-        kind: "system",
-        label: "",
-        text: `Sessão autenticada para ${payload.user.name}.`
-      });
+      setMessageInput("");
     } catch (error) {
       showError(error);
+      pushChatItem({
+        kind: "assistant",
+        label: "IA R Naves",
+        text: "Código inválido ou expirado. Confira no seu e-mail e tente de novo."
+      });
     } finally {
       setActiveRequest("");
     }
@@ -364,6 +460,7 @@ export function SimulatorApp() {
         state.sessionToken
       );
 
+      const personaCtx = payload?.scenario?.manager_context;
       setState((c) => ({
         ...c,
         sessionId: payload.session.id,
@@ -373,7 +470,19 @@ export function SimulatorApp() {
         shouldEnd: false,
         feedbackSaved: false,
         chatItems: [
-          { kind: "system", label: "", text: "Simulação criada. Você já pode iniciar a conversa." }
+          ...c.chatItems,
+          {
+            kind: "system",
+            label: "",
+            text: personaCtx
+              ? `Contexto — ${personaCtx}`
+              : "Simulação criada. Você já pode iniciar a conversa."
+          },
+          {
+            kind: "assistant",
+            label: "IA R Naves",
+            text: "Pode começar quando quiser. Boa simulação!"
+          }
         ]
       }));
       setFeedbackScores({
@@ -442,8 +551,33 @@ export function SimulatorApp() {
   function handleComposerKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      handleSendMessage();
+      handleComposerSubmit();
     }
+  }
+
+  async function handleComposerSubmit(event) {
+    if (event && event.preventDefault) event.preventDefault();
+    const text = messageInput.trim();
+    if (!text) return;
+    if (flowStep === "awaiting_email") {
+      pushChatItem({ kind: "user", label: state.user?.name ?? "Você", text });
+      setMessageInput("");
+      setEmailInput(text);
+      await handleRequestCode();
+      return;
+    }
+    if (flowStep === "awaiting_code") {
+      pushChatItem({ kind: "user", label: state.user?.name ?? "Você", text });
+      setMessageInput("");
+      setCodeInput(text);
+      await handleVerifyCode();
+      return;
+    }
+    if (flowStep === "in_simulation") {
+      await handleSendMessage();
+      return;
+    }
+    // creating_scenario / completed: ignore submits
   }
 
   async function handleGenerateReport() {
@@ -549,7 +683,7 @@ export function SimulatorApp() {
       <div className="shell">
         <div className="loading-shell">
           <img
-            src="/Logos/Vertical branco transp.svg"
+            src="/Logos/Vertical%20branco.svg"
             alt="R Naves Consultoria"
             className="brand-logo-vertical"
           />
@@ -616,7 +750,7 @@ export function SimulatorApp() {
         <div className="navbar-left">
           <a href="/" className="brand" aria-label="R Naves Consultoria">
             <img
-              src="/Logos/Horizontal branco transp.svg"
+              src="/Logos/Horizontal%20branco.svg"
               alt="R Naves Consultoria"
               className="brand-logo"
             />
@@ -637,22 +771,24 @@ export function SimulatorApp() {
         </div>
       </nav>
 
-      {inSimulation ? (
-        <div className="simulation-stage">
+      {!state.report ? (
+        <div className={`simulation-stage${state.scenario ? "" : " no-aside"}`}>
           <div className="simulation-chat">
-            <div className="mobile-subbar">
-              <button type="button" onClick={() => setDrawerOpen(true)}>
-                Ver cliente
-              </button>
-              <button
-                type="button"
-                className="accent"
-                onClick={handleGenerateReport}
-                disabled={isBusy("generate-report")}
-              >
-                {isBusy("generate-report") ? "Gerando…" : "Encerrar"}
-              </button>
-            </div>
+            {state.scenario ? (
+              <div className="mobile-subbar">
+                <button type="button" onClick={() => setDrawerOpen(true)}>
+                  Ver cliente
+                </button>
+                <button
+                  type="button"
+                  className="accent"
+                  onClick={handleGenerateReport}
+                  disabled={isBusy("generate-report")}
+                >
+                  {isBusy("generate-report") ? "Gerando…" : "Encerrar"}
+                </button>
+              </div>
+            ) : null}
 
             {state.bannerError ? (
               <div className="error-banner" role="alert" style={{ margin: "14px 28px 0" }}>
@@ -668,16 +804,37 @@ export function SimulatorApp() {
               </div>
             ) : null}
 
-            <div className="simulation-header">
-              <div className="session-meta">
-                {persona?.nome ? `Conversando com ${persona.nome}` : "Conversa em andamento"}
-                {state.shouldEnd ? (
-                  <span className="intent-chip" style={{ marginLeft: 10 }}>
-                    Encerramento sugerido
-                  </span>
-                ) : null}
-              </div>
+            <div className="welcome-hero">
+              <img
+                src="/Logos/Vertical%20branco.svg"
+                alt="R Naves Consultoria"
+                className="welcome-hero-logo"
+              />
+              <p className="welcome-hero-tagline">
+                IA R Naves — Sua especialista em treinamento de vendas
+              </p>
             </div>
+
+            {state.scenario ? (
+              <div className="simulation-header">
+                <div className="session-meta">
+                  {persona?.nome ? `Conversando com ${persona.nome}` : "Conversa em andamento"}
+                  {state.shouldEnd ? (
+                    <span className="intent-chip" style={{ marginLeft: 10 }}>
+                      Encerramento sugerido
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {state.devCode ? (
+              <div className="simulation-header">
+                <span className="dev-code-pill">
+                  Código dev: <strong>{state.devCode}</strong>
+                </span>
+              </div>
+            ) : null}
 
             <div
               className="chat-log"
@@ -702,24 +859,46 @@ export function SimulatorApp() {
               ) : null}
             </div>
 
-            <form className="composer" onSubmit={handleSendMessage}>
+            <form className="composer" onSubmit={handleComposerSubmit}>
               <div className="composer-wrap">
                 <textarea
                   ref={composerRef}
-                  placeholder="Conversa..."
+                  placeholder={
+                    flowStep === "awaiting_email"
+                      ? "voce@empresa.com"
+                      : flowStep === "awaiting_code"
+                        ? "Digite o código recebido por e-mail"
+                        : flowStep === "creating_scenario"
+                          ? "Preparando o cenário…"
+                          : "Conversa..."
+                  }
                   rows={1}
                   maxLength={4000}
-                  disabled={!state.sessionId || isBusy("send-message") || isListening}
+                  inputMode={flowStep === "awaiting_code" ? "numeric" : "text"}
+                  autoComplete={
+                    flowStep === "awaiting_email"
+                      ? "email"
+                      : flowStep === "awaiting_code"
+                        ? "one-time-code"
+                        : "off"
+                  }
+                  disabled={
+                    flowStep === "creating_scenario" ||
+                    isBusy("send-message") ||
+                    isBusy("request-code") ||
+                    isBusy("verify-code") ||
+                    isListening
+                  }
                   value={messageInput}
                   onChange={(event) => setMessageInput(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
                 />
-                {dictationSupported ? (
+                {dictationSupported && flowStep === "in_simulation" ? (
                   <button
                     type="button"
                     className={`mic-button${isListening ? " listening" : ""}`}
                     onClick={toggleDictation}
-                    disabled={!state.sessionId || isBusy("send-message")}
+                    disabled={isBusy("send-message")}
                     aria-pressed={isListening}
                     aria-label={isListening ? "Parar ditado" : "Falar (ditado por voz)"}
                     title={isListening ? "Parar ditado" : "Falar (ditado por voz)"}
@@ -746,14 +925,23 @@ export function SimulatorApp() {
                   type="submit"
                   className="send-button"
                   disabled={
-                    !state.sessionId ||
                     !messageInput.trim() ||
+                    flowStep === "creating_scenario" ||
+                    flowStep === "completed" ||
                     isBusy("send-message") ||
+                    isBusy("request-code") ||
+                    isBusy("verify-code") ||
                     isListening
                   }
                   aria-busy={isBusy("send-message")}
                 >
-                  {isBusy("send-message") ? "Enviando…" : "Enviar"}
+                  {isBusy("send-message") || isBusy("request-code") || isBusy("verify-code")
+                    ? "Enviando…"
+                    : flowStep === "awaiting_email"
+                      ? "Enviar"
+                      : flowStep === "awaiting_code"
+                        ? "Validar"
+                        : "Enviar"}
                   <svg
                     width="14"
                     height="14"
@@ -772,47 +960,53 @@ export function SimulatorApp() {
             </form>
           </div>
 
-          <aside className="context-panel">
-            <button
-              type="button"
-              className="context-end-button"
-              onClick={handleGenerateReport}
-              disabled={!state.sessionId || isBusy("generate-report")}
-              aria-busy={isBusy("generate-report")}
-            >
-              {isBusy("generate-report") ? "Gerando relatório…" : "Encerrar simulação"}
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+          {state.scenario ? (
+            <aside className="context-panel">
+              <button
+                type="button"
+                className="context-end-button"
+                onClick={handleGenerateReport}
+                disabled={!state.sessionId || isBusy("generate-report")}
+                aria-busy={isBusy("generate-report")}
               >
-                <circle cx="8" cy="8" r="6" />
-                <path d="M8 5v3l2 1.5" />
-              </svg>
-            </button>
-            {contextContent}
-          </aside>
+                {isBusy("generate-report") ? "Gerando relatório…" : "Encerrar simulação"}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="8" cy="8" r="6" />
+                  <path d="M8 5v3l2 1.5" />
+                </svg>
+              </button>
+              {contextContent}
+            </aside>
+          ) : null}
 
-          <div
-            className={`context-drawer-backdrop${drawerOpen ? " open" : ""}`}
-            onClick={() => setDrawerOpen(false)}
-            aria-hidden="true"
-          />
-          <div
-            className={`context-drawer${drawerOpen ? " open" : ""}`}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Detalhes do cliente"
-          >
-            <div className="context-drawer-handle" aria-hidden="true" />
-            {contextContent}
-          </div>
+          {state.scenario ? (
+            <>
+              <div
+                className={`context-drawer-backdrop${drawerOpen ? " open" : ""}`}
+                onClick={() => setDrawerOpen(false)}
+                aria-hidden="true"
+              />
+              <div
+                className={`context-drawer${drawerOpen ? " open" : ""}`}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Detalhes do cliente"
+              >
+                <div className="context-drawer-handle" aria-hidden="true" />
+                {contextContent}
+              </div>
+            </>
+          ) : null}
         </div>
       ) : (
         <main className="main">
