@@ -460,7 +460,7 @@ export function SimulatorApp() {
         state.sessionToken
       );
 
-      const personaCtx = payload?.scenario?.manager_context;
+      const personaCtx = payload?.scenario?.seller_context;
       setState((c) => ({
         ...c,
         sessionId: payload.session.id,
@@ -765,9 +765,7 @@ export function SimulatorApp() {
 
       <div className="context-card">
         <p className="context-eyebrow">Cenário</p>
-        <p className="context-body">
-          {state.scenario?.seller_context || state.scenario?.manager_context}
-        </p>
+        <p className="context-body">{state.scenario?.seller_context}</p>
       </div>
 
       <div className="context-tip">
