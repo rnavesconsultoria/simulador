@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { LoginScreen } from "./login-screen.jsx";
 
 const STORAGE_KEY = "rnaves.simulator.session";
 const FEEDBACK_FIELDS_PRE = [
@@ -341,31 +342,15 @@ export function SimulatorApp() {
         body: JSON.stringify({ email })
       });
 
-      const userName = payload?.user?.name?.split(/\s+/)?.[0];
       setState((c) => ({
         ...c,
         email,
-        devCode: payload.developmentCodePreview ?? "",
-        chatItems: [
-          ...c.chatItems,
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text: userName
-              ? `Certo, ${userName}. Agora digite aqui o código de autenticação recebido por e-mail:`
-              : "Se o e-mail estiver cadastrado, um código foi enviado. Digite-o aqui:"
-          }
-        ]
+        devCode: payload.developmentCodePreview ?? ""
       }));
       setEmailInput("");
       setMessageInput("");
     } catch (error) {
       showError(error);
-      pushChatItem({
-        kind: "assistant",
-        label: "IA R Naves",
-        text: "Não consegui validar esse e-mail agora. Tente novamente."
-      });
     } finally {
       setActiveRequest("");
     }
@@ -397,24 +382,13 @@ export function SimulatorApp() {
         sessionToken: payload.sessionToken,
         user: payload.user,
         devCode: "",
-        chatItems: [
-          ...c.chatItems,
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text: "Por favor aguarde enquanto criamos um cenário de negociação especialmente para você. Leva apenas alguns segundos."
-          }
-        ]
+        // Auth UX lives in /login screen; don't pollute the chat-log.
+        chatItems: []
       }));
       setCodeInput("");
       setMessageInput("");
     } catch (error) {
       showError(error);
-      pushChatItem({
-        kind: "assistant",
-        label: "IA R Naves",
-        text: "Código inválido ou expirado. Confira no seu e-mail e tente de novo."
-      });
     } finally {
       setActiveRequest("");
     }
@@ -796,7 +770,22 @@ export function SimulatorApp() {
         </button>
       ) : null}
 
-      {screenPhase === "simulation" ? (
+      {!state.user ? (
+        <LoginScreen
+          flowStep={flowStep}
+          email={state.email}
+          messageInput={messageInput}
+          setMessageInput={setMessageInput}
+          devCode={state.devCode}
+          isRequesting={isBusy("request-code")}
+          isVerifying={isBusy("verify-code")}
+          onSubmitEmail={handleRequestCode}
+          onSubmitCode={handleVerifyCode}
+          onBack={() =>
+            setState((c) => ({ ...c, email: "", devCode: "" })) || setMessageInput("")
+          }
+        />
+      ) : screenPhase === "simulation" ? (
         <div className={`simulation-stage${state.scenario ? "" : " no-aside"}`}>
           <div className="simulation-chat">
             {state.scenario ? (
