@@ -806,11 +806,6 @@ export function SimulatorApp() {
 
             <div className="welcome-hero">
               <img
-                src="/Logos/horizontal-black.png"
-                alt="R Naves Consultoria"
-                className="welcome-hero-logo-horizontal"
-              />
-              <img
                 src="/Logos/vertical-black.png"
                 alt="R Naves Consultoria"
                 className="welcome-hero-logo-vertical"

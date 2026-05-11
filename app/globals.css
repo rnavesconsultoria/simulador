@@ -469,7 +469,7 @@ button:disabled {
 .welcome-hero {
   margin: 18px auto 0;
   max-width: 520px;
-  padding: 18px 24px 16px;
+  padding: 22px 26px 18px;
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -477,27 +477,21 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 10px;
+  gap: 12px;
   position: relative;
   overflow: hidden;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
 }
 
-.welcome-hero-logo-horizontal {
-  height: 26px;
-  width: auto;
-  display: block;
-}
-
 .welcome-hero-logo-vertical {
-  height: 72px;
+  height: 110px;
   width: auto;
   display: block;
 }
 
 .welcome-hero-tagline {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
   color: #1f2937;
@@ -1122,20 +1116,16 @@ button:disabled {
 @media (max-width: 720px) {
   .welcome-hero {
     margin: 14px 16px 0;
-    padding: 14px 16px 12px;
-    gap: 8px;
-  }
-
-  .welcome-hero-logo-horizontal {
-    height: 22px;
+    padding: 16px 18px 14px;
+    gap: 10px;
   }
 
   .welcome-hero-logo-vertical {
-    height: 60px;
+    height: 84px;
   }
 
   .welcome-hero-tagline {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .main {
