@@ -760,18 +760,6 @@ export function SimulatorApp() {
               <span className="value">{persona.cidade}</span>
             </div>
           ) : null}
-          {persona.personalidade_nivel?.nivel ? (
-            <div className="context-detail">
-              <span className="label">Nível</span>
-              <span className="value">{persona.personalidade_nivel.nivel}</span>
-            </div>
-          ) : null}
-          {persona.personalidade_pace ? (
-            <div className="context-detail">
-              <span className="label">Perfil PACE</span>
-              <span className="value">{persona.personalidade_pace}</span>
-            </div>
-          ) : null}
         </div>
       </div>
 
@@ -804,8 +792,6 @@ export function SimulatorApp() {
           </a>
         </div>
         <div className="navbar-status">
-          <span className={`health-dot${state.healthOk ? " ok" : ""}`} aria-hidden="true" />
-          <span>{state.healthOk ? "API online" : "API indisponível"}</span>
           {state.user ? (
             <button
               type="button"
