@@ -761,13 +761,17 @@ button:disabled {
   background: #ecfdf5;
   border: 1px solid rgba(15, 110, 86, 0.22);
   color: #065f46;
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-radius: 10px;
   font-size: 14px;
   line-height: 1.55;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+}
+
+.admin-login-confirm > p {
+  margin: 0;
 }
 
 .admin-login-devcode {
@@ -784,8 +788,55 @@ button:disabled {
   font-size: 15px;
 }
 
+.admin-login-code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(15, 110, 86, 0.16);
+}
+
+.admin-login-code-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #065f46;
+}
+
+.admin-login-code-form input {
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-align: center;
+  color: #065f46;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.admin-login-code-form input:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.admin-login-code-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-login-code-actions .admin-login-submit {
+  flex: 1;
+  min-width: 140px;
+}
+
 .admin-login-resend {
-  align-self: flex-start;
   background: transparent;
   border: none;
   padding: 0;

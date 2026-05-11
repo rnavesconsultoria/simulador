@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 
+const STORAGE_KEY = "rnaves.simulator.session";
+
 export function AdminLogin() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+  const [status, setStatus] = useState("idle"); // idle | sending | sent | verifying | error
   const [error, setError] = useState("");
   const [devCode, setDevCode] = useState("");
+  const [codeInput, setCodeInput] = useState("");
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -25,10 +28,45 @@ export function AdminLogin() {
         throw new Error(payload?.error?.message ?? "Não consegui enviar o link.");
       }
       setDevCode(payload?.developmentCodePreview ?? "");
+      setCodeInput("");
       setStatus("sent");
     } catch (err) {
       setError(err.message ?? "Erro inesperado.");
       setStatus("error");
+    }
+  }
+
+  async function handleVerify(event) {
+    event.preventDefault();
+    const code = codeInput.trim().replace(/\D/g, "");
+    if (!code) return;
+    setStatus("verifying");
+    setError("");
+    try {
+      const response = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), code })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error?.message ?? "Código inválido ou expirado.");
+      }
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            sessionToken: payload.sessionToken,
+            expiresAt: payload.sessionExpiresAt
+          })
+        );
+      } catch {
+        /* ignore */
+      }
+      window.location.replace("/admin");
+    } catch (err) {
+      setError(err.message ?? "Erro inesperado.");
+      setStatus("sent");
     }
   }
 
@@ -51,25 +89,59 @@ export function AdminLogin() {
           e-mail. Ao clicar, você entra direto no dashboard.
         </p>
 
-        {status === "sent" ? (
+        {status === "sent" || status === "verifying" ? (
           <div className="admin-login-confirm" role="status">
-            <strong>Link enviado.</strong> Verifique sua caixa de entrada (e o spam) e clique no
-            botão <em>Entrar no simulador</em>. O link vale por 15 minutos.
+            <p>
+              <strong>Link enviado.</strong> Abra o e-mail e clique em{" "}
+              <em>Entrar no simulador</em>, ou cole o código de 6 dígitos abaixo. Vale por 15
+              minutos.
+            </p>
+
             {devCode ? (
               <div className="admin-login-devcode">
                 Código dev: <strong>{devCode}</strong>
               </div>
             ) : null}
-            <button
-              type="button"
-              className="admin-login-resend"
-              onClick={() => {
-                setStatus("idle");
-                setDevCode("");
-              }}
-            >
-              Enviar de novo
-            </button>
+
+            <form className="admin-login-code-form" onSubmit={handleVerify}>
+              <label>
+                <span>Código de 6 dígitos</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{4,8}"
+                  maxLength={8}
+                  placeholder="000000"
+                  value={codeInput}
+                  onChange={(event) => setCodeInput(event.target.value.replace(/\D/g, ""))}
+                  disabled={status === "verifying"}
+                  autoFocus
+                />
+              </label>
+              {error ? <div className="admin-login-error">{error}</div> : null}
+              <div className="admin-login-code-actions">
+                <button
+                  type="submit"
+                  className="admin-login-submit"
+                  disabled={status === "verifying" || !codeInput.trim()}
+                >
+                  {status === "verifying" ? "Validando…" : "Entrar"}
+                </button>
+                <button
+                  type="button"
+                  className="admin-login-resend"
+                  onClick={() => {
+                    setStatus("idle");
+                    setDevCode("");
+                    setCodeInput("");
+                    setError("");
+                  }}
+                >
+                  Trocar e-mail
+                </button>
+              </div>
+            </form>
           </div>
         ) : (
           <form className="admin-login-form" onSubmit={handleSubmit}>
