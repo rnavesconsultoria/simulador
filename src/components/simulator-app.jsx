@@ -678,6 +678,53 @@ export function SimulatorApp() {
     }
   }
 
+  function handleNewSimulation() {
+    setState((c) => ({
+      ...c,
+      scenario: null,
+      sessionId: "",
+      report: null,
+      lastIntent: "",
+      shouldEnd: false,
+      feedbackSaved: false,
+      welcomeShown: false,
+      chatItems: [],
+      bannerError: ""
+    }));
+    setFeedbackScores({
+      realismScore: 0,
+      challengeScore: 0,
+      interactionQualityScore: 0,
+      feedbackUtilityScore: 0,
+      learningImpactScore: 0
+    });
+    setFeedbackComment("");
+    setMessageInput("");
+  }
+
+  function pilarColor(score) {
+    const n = Number(score);
+    if (!Number.isFinite(n)) return "#6b7280";
+    if (n < 6) return "#ba7517";
+    if (n < 8) return "#185fa5";
+    return "#0f6e56";
+  }
+
+  function resultLabel(resultado) {
+    switch (resultado) {
+      case "fechou_ideal":
+        return "Fechou no ideal";
+      case "fechou_aceitavel":
+        return "Fechou no aceitável";
+      case "nao_fechou":
+        return "Não fechou";
+      case "inconclusivo":
+        return "Sessão inconclusiva";
+      default:
+        return resultado || "Resultado";
+    }
+  }
+
   if (!hydrated) {
     return (
       <div className="shell">
@@ -1009,330 +1056,252 @@ export function SimulatorApp() {
           ) : null}
         </div>
       ) : (
-        <main className="main">
-        <section className="hero">
-          <div>
-            <p className="eyebrow">Validação do novo stack</p>
-            <h2>Fluxo completo do simulador em paralelo ao legado</h2>
-            <p className="hero-copy">
-              Autentique, gere um cenário, conduza a conversa, produza o relatório do gerente e
-              registre o feedback final.
+        <main className="feedback-screen">
+          {state.bannerError ? (
+            <div className="fb-error-banner" role="alert">
+              <span>{state.bannerError}</span>
+              <button type="button" className="fb-btn fb-btn-ghost" onClick={clearError}>
+                Fechar
+              </button>
+            </div>
+          ) : null}
+
+          <div className="fb-header-card">
+            <div className="fb-eyebrow-line" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <rect x="9" y="3" width="6" height="4" rx="1" />
+                <path d="m9 14 2 2 4-4" />
+              </svg>
+              Feedback da simulação
+            </div>
+            <h1 className="fb-h1">
+              {(state.user?.name?.split(/\s+/)[0]) ?? "Você"}, boa simulação.
+            </h1>
+            {persona ? (
+              <p className="fb-subtitle">
+                Conversa com <strong>{persona.nome}</strong>
+                {persona.cargo ? <> · {persona.cargo}</> : null}
+                {persona.empresa ? <> · {persona.empresa}</> : null}
+                {persona.personalidade_pace ? (
+                  <>
+                    {" "}
+                    · perfil DISC <strong>{persona.personalidade_pace}</strong>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+
+            <div className="fb-hero-grid">
+              <div className="fb-score-block">
+                <div className="fb-score-big">
+                  {Number(state.report.average_score ?? 0).toFixed(1)}
+                </div>
+                <div className="fb-tiny" style={{ marginTop: 4 }}>média PACE</div>
+                <div className="fb-baseline">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 22s-8-4.5-8-12a8 8 0 0 1 16 0c0 7.5-8 12-8 12z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  seu ponto de partida
+                </div>
+              </div>
+              <div>
+                {state.report.report_json?.Resultado ? (
+                  <div className="fb-pill fb-pill-info">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="m9 12 2 2 4-4" />
+                    </svg>
+                    {resultLabel(state.report.report_json.Resultado)}
+                  </div>
+                ) : null}
+                <div className="fb-result-details">
+                  {state.report.report_json?.Preco_final ? (
+                    <div style={{ marginBottom: 4 }}>
+                      <span className="fb-label">Preço final:</span>{" "}
+                      <strong>{state.report.report_json.Preco_final}</strong>
+                    </div>
+                  ) : null}
+                  {state.report.report_json?.Compromissos_obtidos ? (
+                    <div>
+                      <span className="fb-label">Próximo passo:</span>{" "}
+                      {state.report.report_json.Compromissos_obtidos}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <section className="fb-section">
+            <h2 className="fb-h2">Avaliação por pilar PACE</h2>
+            <p className="fb-muted fb-tight">
+              Sem comparativo nesta primeira sessão. As próximas simulações vão mostrar sua evolução.
             </p>
-          </div>
-        </section>
 
-        {state.bannerError ? (
-          <div className="error-banner" role="alert">
-            <span>{state.bannerError}</span>
-            <button type="button" className="ghost-button" onClick={clearError} aria-label="Fechar aviso">
-              Fechar
-            </button>
-          </div>
-        ) : null}
-
-        <section className="grid">
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">1. Acesso</p>
-                <h3>Entrar no simulador</h3>
-              </div>
+            <div className="fb-radar-wrap">
+              <svg viewBox="0 0 320 280" width="320" height="280" role="img" aria-label="Radar PACE">
+                <g transform="translate(160, 140)">
+                  <polygon points="0,-100 100,0 0,100 -100,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                  <polygon points="0,-75 75,0 0,75 -75,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                  <polygon points="0,-50 50,0 0,50 -50,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                  <polygon points="0,-25 25,0 0,25 -25,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                  <line x1="0" y1="-100" x2="0" y2="100" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                  <line x1="-100" y1="0" x2="100" y2="0" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                </g>
+                <g transform="translate(160, 140)">
+                  {(() => {
+                    const P = Number(state.report.questions_score ?? 0);
+                    const A = Number(state.report.analysis_score ?? 0);
+                    const C = Number(state.report.creativity_score ?? 0);
+                    const E = Number(state.report.engagement_score ?? 0);
+                    const points = `0,${-P * 10} ${A * 10},0 0,${C * 10} ${-E * 10},0`;
+                    return (
+                      <>
+                        <polygon points={points} fill="#185fa5" fillOpacity="0.15" stroke="#185fa5" strokeWidth="1.5" />
+                        <circle cx="0" cy={-P * 10} r="3.5" fill="#185fa5" />
+                        <circle cx={A * 10} cy="0" r="3.5" fill="#185fa5" />
+                        <circle cx="0" cy={C * 10} r="3.5" fill="#185fa5" />
+                        <circle cx={-E * 10} cy="0" r="3.5" fill="#185fa5" />
+                      </>
+                    );
+                  })()}
+                </g>
+                <g>
+                  <text x="160" y="25" textAnchor="middle" fontSize="13" fontWeight="500" fill="#111827">
+                    P · {Number(state.report.questions_score ?? 0).toFixed(1)}
+                  </text>
+                  <text x="280" y="144" textAnchor="start" fontSize="13" fontWeight="500" fill="#111827">
+                    A · {Number(state.report.analysis_score ?? 0).toFixed(1)}
+                  </text>
+                  <text x="160" y="260" textAnchor="middle" fontSize="13" fontWeight="500" fill="#111827">
+                    C · {Number(state.report.creativity_score ?? 0).toFixed(1)}
+                  </text>
+                  <text x="40" y="144" textAnchor="end" fontSize="13" fontWeight="500" fill="#111827">
+                    E · {Number(state.report.engagement_score ?? 0).toFixed(1)}
+                  </text>
+                </g>
+              </svg>
             </div>
 
-            {state.user ? (
-              <div className="notice">
-                Conectado como <strong>{state.user.name}</strong> ({state.user.email}).
-              </div>
-            ) : (
-              <>
-                <form className="stack" onSubmit={handleRequestCode}>
-                  <label className="field">
-                    <span>E-mail</span>
-                    <input
-                      type="email"
-                      placeholder="voce@empresa.com"
-                      autoComplete="email"
-                      required
-                      value={emailInput}
-                      onChange={(event) => setEmailInput(event.target.value)}
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={isBusy("request-code")}
-                    aria-busy={isBusy("request-code")}
-                  >
-                    {isBusy("request-code") ? "Enviando…" : "Enviar código"}
-                  </button>
-                </form>
-
-                {state.email ? (
-                  <form className="stack compact" onSubmit={handleVerifyCode}>
-                    <label className="field">
-                      <span>Código</span>
-                      <input
-                        type="text"
-                        placeholder="000000"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        pattern="[0-9]{4,8}"
-                        required
-                        value={codeInput}
-                        onChange={(event) => setCodeInput(event.target.value.replace(/\D/g, ""))}
-                      />
-                    </label>
-                    <button
-                      type="submit"
-                      className="primary-button"
-                      disabled={isBusy("verify-code")}
-                      aria-busy={isBusy("verify-code")}
-                    >
-                      {isBusy("verify-code") ? "Validando…" : "Validar código"}
-                    </button>
-                  </form>
-                ) : null}
-
-                {state.devCode ? (
-                  <div className="dev-code-card" role="note">
-                    <div>
-                      <p className="eyebrow">Código de desenvolvimento</p>
-                      <strong>{state.devCode}</strong>
-                      <p className="helper-text">
-                        Visível apenas com SHOW_DEVELOPMENT_CODE_PREVIEW habilitado.
-                      </p>
+            {[
+              { score: state.report.questions_score, label: "Preparação", text: state.report.report_json?.Preparacao },
+              { score: state.report.analysis_score, label: "Análise", text: state.report.report_json?.Analise },
+              { score: state.report.creativity_score, label: "Cocriação", text: state.report.report_json?.Cocriacao },
+              { score: state.report.engagement_score, label: "Engajamento", text: state.report.report_json?.Engajamento }
+            ].map((p) => {
+              const color = pilarColor(p.score);
+              const n = Number(p.score) || 0;
+              return (
+                <div className="fb-pilar-row" key={p.label}>
+                  <div>
+                    <div className="fb-score-medium" style={{ color }}>{n.toFixed(1)}</div>
+                    <div className="fb-tiny" style={{ marginTop: 4 }}>{p.label}</div>
+                    <div className="fb-band-track">
+                      <div className="fb-band-fill" style={{ width: `${Math.max(0, Math.min(100, n * 10))}%`, background: color }} />
                     </div>
-                    <button type="button" className="secondary-button" onClick={copyDevCode}>
-                      Copiar
-                    </button>
                   </div>
-                ) : null}
-              </>
-            )}
+                  <div>
+                    <h3 className="fb-h3">{p.label}</h3>
+                    <p style={{ margin: 0 }}>{p.text}</p>
+                  </div>
+                </div>
+              );
+            })}
           </section>
 
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">2. Cenário</p>
-                <h3>Preparar simulação</h3>
-              </div>
-              <button
-                type="button"
-                className="primary-button"
-                disabled={!state.sessionToken || isBusy("create-simulation")}
-                onClick={handleCreateSimulation}
-                aria-busy={isBusy("create-simulation")}
-              >
-                {isBusy("create-simulation") ? "Gerando…" : "Criar simulação"}
-              </button>
-            </div>
-
-            <div className="scenario-box">
-              {persona ? (
-                <>
-                  <div className="scenario-highlights">
-                    <div className="mini-metric">
-                      <span className="eyebrow">Persona</span>
-                      <strong>{persona.nome}</strong>
-                    </div>
-                    <div className="mini-metric">
-                      <span className="eyebrow">Cargo</span>
-                      <strong>{persona.cargo}</strong>
-                    </div>
-                    <div className="mini-metric">
-                      <span className="eyebrow">Empresa</span>
-                      <strong>{persona.empresa}</strong>
-                    </div>
-                    <div className="mini-metric">
-                      <span className="eyebrow">Nível</span>
-                      <strong>{persona.personalidade_nivel?.nivel}</strong>
-                    </div>
-                  </div>
-                  <p>{state.scenario.manager_context}</p>
-                </>
-              ) : (
-                <p className="muted">
-                  Assim que a simulação for criada, o resumo do cenário aparece aqui.
+          {(() => {
+            const negociacao = persona?.negociacao ?? {};
+            const allBenefits = (negociacao.beneficios_ocultos ?? [])
+              .map((b) => b.nome || b.descricao)
+              .filter(Boolean);
+            const allDeep = (negociacao.objecoes_profundas ?? [])
+              .map((o) => o.descricao)
+              .filter(Boolean);
+            const discoveredB = state.report.report_json?.Beneficios_ocultos_descobertos ?? [];
+            const discoveredO = state.report.report_json?.Objecoes_profundas_descobertas ?? [];
+            const discovered = [...discoveredB, ...discoveredO].filter(Boolean);
+            const norm = (s) => String(s).toLowerCase().slice(0, 18);
+            const isCovered = (item) =>
+              discovered.some((d) => norm(d) && (norm(item).includes(norm(d)) || norm(d).includes(norm(item))));
+            const toExplore = [
+              ...allBenefits.filter((b) => !isCovered(b)),
+              ...allDeep.filter((o) => !isCovered(o))
+            ];
+            if (discovered.length === 0 && toExplore.length === 0) return null;
+            return (
+              <section className="fb-section">
+                <h2 className="fb-h2">Descobertas da conversa</h2>
+                <p className="fb-muted fb-tight">
+                  O cenário tinha dores e benefícios ocultos que só emergem com diagnóstico profundo.
                 </p>
-              )}
-            </div>
-          </section>
-        </section>
-
-        <section className="panel full-height">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">3. Conversa</p>
-              <h3>Treino de negociação</h3>
-            </div>
-            <div className="header-actions">
-              {state.shouldEnd ? <span className="intent-chip">Encerramento sugerido</span> : null}
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={!state.sessionId || isBusy("generate-report")}
-                onClick={handleGenerateReport}
-                aria-busy={isBusy("generate-report")}
-              >
-                {isBusy("generate-report") ? "Gerando…" : state.report ? "Atualizar relatório" : "Gerar relatório"}
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="chat-log"
-            ref={chatLogRef}
-            aria-live="polite"
-            aria-busy={isBusy("send-message")}
-          >
-            {state.chatItems.map((item, index) => (
-              <article className={`message ${item.kind}`} key={`${item.kind}-${index}`}>
-                {item.kind !== "system" ? <span className="message-label">{item.label}</span> : null}
-                <div className="message-text">{item.text}</div>
-              </article>
-            ))}
-            {isBusy("send-message") ? (
-              <p className="system-line">Cliente está digitando…</p>
-            ) : null}
-          </div>
-
-          <form className="composer" onSubmit={handleSendMessage}>
-            <textarea
-              ref={composerRef}
-              placeholder="Escreva a próxima fala do vendedor… (Enter envia, Shift+Enter quebra linha)"
-              rows={3}
-              maxLength={4000}
-              disabled={!state.sessionId || isBusy("send-message") || isListening}
-              value={messageInput}
-              onChange={(event) => setMessageInput(event.target.value)}
-              onKeyDown={handleComposerKeyDown}
-            />
-            {dictationSupported ? (
-              <button
-                type="button"
-                className={`mic-button${isListening ? " listening" : ""}`}
-                onClick={toggleDictation}
-                disabled={!state.sessionId || isBusy("send-message")}
-                aria-pressed={isListening}
-                aria-label={isListening ? "Parar ditado" : "Falar (ditado por voz)"}
-                title={isListening ? "Parar ditado" : "Falar (ditado por voz)"}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="9" y="3" width="6" height="12" rx="3" />
-                  <path d="M5 11a7 7 0 0 0 14 0" />
-                  <line x1="12" y1="18" x2="12" y2="22" />
-                  <line x1="8" y1="22" x2="16" y2="22" />
-                </svg>
-              </button>
-            ) : null}
-            <button
-              type="submit"
-              className="primary-button"
-              disabled={!state.sessionId || !messageInput.trim() || isBusy("send-message") || isListening}
-              aria-busy={isBusy("send-message")}
-            >
-              {isBusy("send-message") ? "Enviando…" : "Enviar"}
-            </button>
-          </form>
-        </section>
-
-        <section className="grid">
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">4. Relatório</p>
-                <h3>Leitura do gerente</h3>
-              </div>
-            </div>
-
-            <div className="report-box">
-              {state.report ? (
-                <>
-                  <div className="report-meta">
-                    <div className="metric">
-                      <span className="eyebrow">P</span>
-                      <strong>{state.report.questions_score ?? "-"}</strong>
-                    </div>
-                    <div className="metric">
-                      <span className="eyebrow">A</span>
-                      <strong>{state.report.analysis_score ?? "-"}</strong>
-                    </div>
-                    <div className="metric">
-                      <span className="eyebrow">C</span>
-                      <strong>{state.report.creativity_score ?? "-"}</strong>
-                    </div>
-                    <div className="metric">
-                      <span className="eyebrow">E</span>
-                      <strong>{state.report.engagement_score ?? "-"}</strong>
-                    </div>
-                    <div className="metric">
-                      <span className="eyebrow">Média</span>
-                      <strong>{state.report.average_score ?? "-"}</strong>
-                    </div>
+                <div className="fb-discoveries">
+                  <div>
+                    <h3 className="fb-h3" style={{ color: "#0f6e56" }}>Você descobriu</h3>
+                    {discovered.length ? (
+                      discovered.map((d, i) => (
+                        <div className="fb-discovery" key={`d-${i}`}>
+                          <span className="fb-discovery-icon" style={{ color: "#0f6e56" }} aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="9" />
+                              <path d="m9 12 2 2 4-4" />
+                            </svg>
+                          </span>
+                          <span>{d}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="fb-muted" style={{ margin: 0 }}>Nada nesta sessão.</p>
+                    )}
                   </div>
-                  <div className="report-copy">
-                    <div>
-                      <h4>Resumo</h4>
-                      <p>{state.report.report_json?.Resumo}</p>
-                    </div>
-                    <div>
-                      <h4>Preparação</h4>
-                      <p>{state.report.report_json?.Preparacao}</p>
-                    </div>
-                    <div>
-                      <h4>Análise</h4>
-                      <p>{state.report.report_json?.Analise}</p>
-                    </div>
-                    <div>
-                      <h4>Cocriação</h4>
-                      <p>{state.report.report_json?.Cocriacao}</p>
-                    </div>
-                    <div>
-                      <h4>Engajamento</h4>
-                      <p>{state.report.report_json?.Engajamento}</p>
-                    </div>
-                    <div>
-                      <h4>Recomendações</h4>
-                      <p>{state.report.report_json?.Recomendacoes ?? state.report.report_summary}</p>
-                    </div>
+                  <div>
+                    <h3 className="fb-h3" style={{ color: "#6b7280" }}>Para explorar na próxima</h3>
+                    {toExplore.length ? (
+                      toExplore.map((t, i) => (
+                        <div className="fb-discovery" key={`t-${i}`}>
+                          <span className="fb-discovery-icon" style={{ color: "#9ca3af" }} aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="3 3">
+                              <circle cx="12" cy="12" r="9" />
+                            </svg>
+                          </span>
+                          <span>{t}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="fb-muted" style={{ margin: 0 }}>Você cobriu tudo. Excelente.</p>
+                    )}
                   </div>
-                </>
-              ) : (
-                <p className="muted">O relatório final aparece aqui depois da conversa.</p>
-              )}
-            </div>
-          </section>
+                </div>
+              </section>
+            );
+          })()}
 
-          <section className="panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">5. Feedback</p>
-                <h3>Fechar sessão</h3>
+          {state.report.report_json?.Resumo ? (
+            <section className="fb-section">
+              <h2 className="fb-h2">Resumo</h2>
+              <div className="fb-editorial-card">
+                <p>{state.report.report_json.Resumo}</p>
               </div>
-            </div>
+            </section>
+          ) : null}
 
-            {!state.report ? (
-              <div className="notice">
-                O formulário de feedback é liberado depois que o relatório é gerado.
+          {state.report.report_json?.Recomendacoes || state.report.report_summary ? (
+            <section className="fb-section">
+              <h2 className="fb-h2">Próximas ações</h2>
+              <div className="fb-editorial-card">
+                <p>{state.report.report_json?.Recomendacoes ?? state.report.report_summary}</p>
               </div>
-            ) : state.feedbackSaved ? (
-              <div className="notice success" role="status">
-                Feedback registrado. Obrigado!
-              </div>
+            </section>
+          ) : null}
+
+          <section className="fb-section">
+            <h2 className="fb-h2">Como foi essa simulação para você?</h2>
+            {state.feedbackSaved ? (
+              <div className="fb-success-card" role="status">Feedback registrado. Obrigado!</div>
             ) : (
-              <form className="stack" onSubmit={handleFeedbackSubmit}>
-                <div className="rating-grid">
+              <form className="fb-form-card" onSubmit={handleFeedbackSubmit}>
+                <div className="fb-rating-grid">
                   {FEEDBACK_FIELDS.map((field) => (
                     <RatingInput
                       key={field.name}
@@ -1346,23 +1315,21 @@ export function SimulatorApp() {
                     />
                   ))}
                 </div>
-
-                <label className="field">
+                <label className="fb-field">
                   <span>Comentário (opcional)</span>
                   <textarea
                     name="userFeedback"
-                    rows={4}
+                    rows={3}
                     maxLength={4000}
-                    placeholder="Como foi usar esta nova versão?"
+                    placeholder="Como foi usar o simulador?"
                     value={feedbackComment}
                     onChange={(event) => setFeedbackComment(event.target.value)}
                     disabled={isBusy("send-feedback")}
                   />
                 </label>
-
                 <button
                   type="submit"
-                  className="primary-button"
+                  className="fb-btn fb-btn-primary"
                   disabled={isBusy("send-feedback") || !feedbackIsValid()}
                   aria-busy={isBusy("send-feedback")}
                 >
@@ -1371,9 +1338,24 @@ export function SimulatorApp() {
               </form>
             )}
           </section>
-        </section>
+
+          <div className="fb-btn-row">
+            <button type="button" className="fb-btn fb-btn-primary" onClick={handleNewSimulation}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 15-6.7l3 3" />
+                <path d="M21 3v6h-6" />
+                <path d="M21 12a9 9 0 0 1-15 6.7l-3-3" />
+                <path d="M3 21v-6h6" />
+              </svg>
+              Nova simulação
+            </button>
+            <button type="button" className="fb-btn" onClick={() => handleLogout({ confirm: true })}>
+              Sair
+            </button>
+          </div>
         </main>
       )}
     </div>
   );
 }
+
