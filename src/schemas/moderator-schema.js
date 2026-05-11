@@ -4,14 +4,10 @@ export const moderatorJsonSchema = {
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["status_moderator", "motivo"],
+    required: ["violacao", "motivo"],
     properties: {
-      status_moderator: {
-        type: "string"
-      },
-      motivo: {
-        type: "string"
-      }
+      violacao: { type: "boolean" },
+      motivo: { type: ["string", "null"] }
     }
   }
 };

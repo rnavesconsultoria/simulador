@@ -7,3 +7,7 @@ export function generateAppSessionToken() {
 export function hashAppSessionToken(token, secret) {
   return crypto.createHmac("sha256", secret).update(token).digest("hex");
 }
+
+export function hashAccessCode(code, secret) {
+  return crypto.createHmac("sha256", secret).update(code).digest("hex");
+}

@@ -1,14 +1,17 @@
 import { env } from "../config/env.js";
 import { formatConversationHistory } from "../lib/conversation-history.js";
-import { extractJsonPayload } from "../lib/json-response.js";
 import { extractUsage } from "../lib/openai-usage.js";
-import { getOpenAiClient } from "../lib/openai-client.js";
+import { callOpenAiResponses } from "../lib/openai-call.js";
 import { loadPrompt } from "../lib/prompt-loader.js";
 import { renderPrompt } from "../lib/prompt-template.js";
 import { getSupabaseAdmin } from "../lib/supabase-admin.js";
+import { clientJsonSchema } from "../schemas/client-schema.js";
+import { intentJsonSchema } from "../schemas/intent-schema.js";
 import { moderatorJsonSchema } from "../schemas/moderator-schema.js";
 import { recordOpenAiUsage } from "./cost-service.js";
 import { getActivePromptVersion } from "./prompt-version-service.js";
+
+const PHASE_ORDER = ["abertura", "objecoes", "preco", "fechamento"];
 
 async function loadSimulationContext(sessionId, userId) {
   const supabase = getSupabaseAdmin();
@@ -18,8 +21,10 @@ async function loadSimulationContext(sessionId, userId) {
       id,
       session_key,
       status,
+      started_at,
       user_id,
       scenario_id,
+      current_phase,
       scenarios (
         id,
         dynamic_block_json
@@ -33,11 +38,7 @@ async function loadSimulationContext(sessionId, userId) {
     throw new Error(`Failed to load simulation session: ${error.message}`);
   }
 
-  if (!data) {
-    return null;
-  }
-
-  return data;
+  return data ?? null;
 }
 
 async function loadSessionMessages(sessionId) {
@@ -90,69 +91,85 @@ async function insertMessage({
   return data;
 }
 
-async function updateSimulationStatus(sessionId, status) {
+async function markSimulationInProgress(simulation) {
   const supabase = getSupabaseAdmin();
-  const payload = {
-    status
-  };
-
-  if (status === "in_progress") {
-    payload.started_at = new Date().toISOString();
+  const update = { status: "in_progress" };
+  if (!simulation.started_at) {
+    update.started_at = new Date().toISOString();
   }
 
   const { error } = await supabase
     .from("simulation_sessions")
-    .update(payload)
-    .eq("id", sessionId);
+    .update(update)
+    .eq("id", simulation.id);
 
   if (error) {
     throw new Error(`Failed to update simulation status: ${error.message}`);
   }
 }
 
+async function updateCurrentPhase(sessionId, phase) {
+  if (!phase || !PHASE_ORDER.includes(phase)) return;
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from("simulation_sessions")
+    .update({ current_phase: phase })
+    .eq("id", sessionId);
+  if (error) {
+    console.warn(`[message-service] failed to persist phase: ${error.message}`);
+  }
+}
+
+function parseJson(rawText, stage) {
+  try {
+    return JSON.parse(rawText);
+  } catch (error) {
+    throw new Error(`Invalid JSON from ${stage} agent: ${error.message}`);
+  }
+}
+
 async function runModerator(inputVendedor) {
   const promptTemplate = await loadPrompt("moderador");
-  const prompt = renderPrompt(promptTemplate, {
-    input_vendedor: inputVendedor
-  });
+  const prompt = renderPrompt(promptTemplate, { input_vendedor: inputVendedor });
 
-  const openai = getOpenAiClient();
-  const response = await openai.responses.create({
-    model: env.openAiModelModerador,
-    input: prompt,
-    text: {
-      format: {
-        type: "json_schema",
-        ...moderatorJsonSchema
-      }
-    }
-  });
+  const response = await callOpenAiResponses(
+    {
+      model: env.openAiModelModerador,
+      input: prompt,
+      text: { format: { type: "json_schema", ...moderatorJsonSchema } }
+    },
+    { stage: "moderator" }
+  );
 
-  const payload = extractJsonPayload(response.output_text);
   return {
     responseId: response.id,
-    payload,
+    payload: parseJson(response.output_text, "moderator"),
     response
   };
 }
 
-async function runClient({ blocoDinamico, historico, inputVendedor }) {
+async function runClient({ blocoDinamico, historico, inputVendedor, faseAtual }) {
   const promptTemplate = await loadPrompt("cliente");
   const prompt = renderPrompt(promptTemplate, {
     bloco_dinamico: JSON.stringify(blocoDinamico, null, 2),
     historico,
-    input_vendedor: inputVendedor
+    input_vendedor: inputVendedor,
+    fase_atual: faseAtual
   });
 
-  const openai = getOpenAiClient();
-  const response = await openai.responses.create({
-    model: env.openAiModelCliente,
-    input: prompt
-  });
+  const response = await callOpenAiResponses(
+    {
+      model: env.openAiModelCliente,
+      input: prompt,
+      text: { format: { type: "json_schema", ...clientJsonSchema } }
+    },
+    { stage: "client" }
+  );
 
+  const payload = parseJson(response.output_text, "client");
   return {
     responseId: response.id,
-    text: response.output_text?.trim() ?? "",
+    payload,
     response
   };
 }
@@ -164,15 +181,19 @@ async function runIntent({ inputVendedor, respostaCliente }) {
     resposta_cliente: respostaCliente
   });
 
-  const openai = getOpenAiClient();
-  const response = await openai.responses.create({
-    model: env.openAiModelIntencao,
-    input: prompt
-  });
+  const response = await callOpenAiResponses(
+    {
+      model: env.openAiModelIntencao,
+      input: prompt,
+      text: { format: { type: "json_schema", ...intentJsonSchema } }
+    },
+    { stage: "intent" }
+  );
 
+  const payload = parseJson(response.output_text, "intent");
   return {
     responseId: response.id,
-    text: response.output_text?.trim() ?? "",
+    payload,
     response
   };
 }
@@ -180,37 +201,31 @@ async function runIntent({ inputVendedor, respostaCliente }) {
 export async function processVendorMessage({ sessionId, user, message }) {
   const simulation = await loadSimulationContext(sessionId, user.id);
   if (!simulation) {
-    return {
-      ok: false,
-      reason: "simulation_not_found"
-    };
+    return { ok: false, reason: "simulation_not_found" };
   }
 
-  const trimmedMessage = message?.trim();
+  const trimmedMessage = typeof message === "string" ? message.trim() : "";
   if (!trimmedMessage) {
-    return {
-      ok: false,
-      reason: "missing_message"
-    };
+    return { ok: false, reason: "missing_message" };
+  }
+  if (trimmedMessage.length > 4_000) {
+    return { ok: false, reason: "message_too_long" };
   }
 
-  await updateSimulationStatus(sessionId, "in_progress");
+  await markSimulationInProgress(simulation);
 
-  const vendorPromptVersionId = null;
   await insertMessage({
     sessionId,
     role: "user",
     actor: "vendor",
     messageType: "text",
     content: trimmedMessage,
-    metadata: {
-      prompt_version_id: vendorPromptVersionId
-    }
+    metadata: {}
   });
 
   const moderatorPromptVersion = await getActivePromptVersion("moderador");
   const moderator = await runModerator(trimmedMessage);
-  const wasModerated = moderator.payload.status_moderator === "true";
+  const wasModerated = moderator.payload.violacao === true;
 
   await recordOpenAiUsage({
     sessionId,
@@ -224,9 +239,9 @@ export async function processVendorMessage({ sessionId, user, message }) {
     role: "assistant",
     actor: "moderator",
     messageType: "event",
-    content: wasModerated ? moderator.payload.motivo : "",
+    content: wasModerated ? (moderator.payload.motivo ?? "") : "",
     moderationFlag: wasModerated,
-    moderationReason: moderator.payload.motivo,
+    moderationReason: moderator.payload.motivo ?? null,
     metadata: {
       response_id: moderator.responseId,
       prompt_version_id: moderatorPromptVersion?.id ?? null
@@ -237,20 +252,19 @@ export async function processVendorMessage({ sessionId, user, message }) {
     return {
       ok: true,
       moderated: true,
-      moderator: {
-        reason: moderator.payload.motivo
-      }
+      moderator: { reason: moderator.payload.motivo ?? "Conduta inadequada detectada." }
     };
   }
 
-  const messages = await loadSessionMessages(sessionId);
-  const historico = formatConversationHistory(messages);
+  const allMessages = await loadSessionMessages(sessionId);
+  const historico = formatConversationHistory(allMessages, { actors: ["vendor", "client"] });
 
   const clientPromptVersion = await getActivePromptVersion("cliente");
   const client = await runClient({
     blocoDinamico: simulation.scenarios.dynamic_block_json,
     historico,
-    inputVendedor: trimmedMessage
+    inputVendedor: trimmedMessage,
+    faseAtual: simulation.current_phase ?? "abertura"
   });
 
   await recordOpenAiUsage({
@@ -260,22 +274,28 @@ export async function processVendorMessage({ sessionId, user, message }) {
     usage: extractUsage(client.response)
   });
 
+  const clientFala = (client.payload.fala ?? "").trim();
+  const clientPhase = client.payload.fase ?? simulation.current_phase ?? "abertura";
+
   const clientMessage = await insertMessage({
     sessionId,
     role: "assistant",
     actor: "client",
     messageType: "text",
-    content: client.text,
+    content: clientFala,
     metadata: {
       response_id: client.responseId,
-      prompt_version_id: clientPromptVersion?.id ?? null
+      prompt_version_id: clientPromptVersion?.id ?? null,
+      fase: clientPhase
     }
   });
+
+  await updateCurrentPhase(sessionId, clientPhase);
 
   const intentPromptVersion = await getActivePromptVersion("intencao");
   const intent = await runIntent({
     inputVendedor: trimmedMessage,
-    respostaCliente: client.text
+    respostaCliente: clientFala
   });
 
   await recordOpenAiUsage({
@@ -285,16 +305,15 @@ export async function processVendorMessage({ sessionId, user, message }) {
     usage: extractUsage(intent.response)
   });
 
-  const normalizedIntent = intent.text.toLowerCase();
-  const shouldEnd = normalizedIntent.includes("intention_true");
+  const shouldEnd = intent.payload.intencao_encerrar === true;
 
   await insertMessage({
     sessionId,
     role: "assistant",
     actor: "intent",
     messageType: "event",
-    content: intent.text,
-    intentResult: normalizedIntent,
+    content: shouldEnd ? "intencao_encerrar" : "",
+    intentResult: shouldEnd ? "intention_true" : "intention_false",
     metadata: {
       response_id: intent.responseId,
       prompt_version_id: intentPromptVersion?.id ?? null
@@ -305,7 +324,7 @@ export async function processVendorMessage({ sessionId, user, message }) {
     ok: true,
     moderated: false,
     reply: clientMessage.content,
-    shouldEnd,
-    intent: intent.text
+    phase: clientPhase,
+    shouldEnd
   };
 }

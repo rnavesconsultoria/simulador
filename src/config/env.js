@@ -1,7 +1,8 @@
 const requiredEnvVars = [
   "SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "OPENAI_API_KEY"
+  "OPENAI_API_KEY",
+  "APP_SESSION_SECRET"
 ];
 
 function readEnv(name, { required = false, fallback = undefined } = {}) {
@@ -55,7 +56,7 @@ export const env = {
     return readEnv("OPENAI_MODEL_GERENTE", { fallback: "gpt-5-mini" });
   },
   get appSessionSecret() {
-    return readEnv("APP_SESSION_SECRET", { fallback: "change-me" });
+    return readEnv("APP_SESSION_SECRET", { required: true });
   },
   get appSessionTtlHours() {
     return Number(readEnv("APP_SESSION_TTL_HOURS", { fallback: "24" }));
@@ -63,10 +64,22 @@ export const env = {
   get authCodeTtlMinutes() {
     return Number(readEnv("AUTH_CODE_TTL_MINUTES", { fallback: "15" }));
   },
+  get authMaxVerifyAttempts() {
+    return Number(readEnv("AUTH_MAX_VERIFY_ATTEMPTS", { fallback: "5" }));
+  },
+  get authRequestRateLimitPerMinute() {
+    return Number(readEnv("AUTH_REQUEST_RATE_LIMIT_PER_MINUTE", { fallback: "5" }));
+  },
   get showDevelopmentCodePreview() {
     return readBooleanEnv("SHOW_DEVELOPMENT_CODE_PREVIEW", false);
   },
   get appBaseUrl() {
     return readEnv("APP_BASE_URL", { fallback: "http://localhost:3000" });
+  },
+  get nodeEnv() {
+    return readEnv("NODE_ENV", { fallback: "development" });
+  },
+  get isProduction() {
+    return readEnv("NODE_ENV", { fallback: "development" }) === "production";
   }
 };

@@ -15,9 +15,12 @@ function mapActorLabel(actor) {
   }
 }
 
-export function formatConversationHistory(messages) {
+const DEFAULT_ACTORS = new Set(["vendor", "client"]);
+
+export function formatConversationHistory(messages, { actors } = {}) {
+  const allowed = actors instanceof Set ? actors : (actors ? new Set(actors) : DEFAULT_ACTORS);
   return messages
-    .filter((message) => message.content && ["vendor", "client", "moderator"].includes(message.actor))
-    .map((message) => `**${mapActorLabel(message.actor)}:** ${message.content}`)
+    .filter((m) => m.content && allowed.has(m.actor))
+    .map((m) => `**${mapActorLabel(m.actor)}:** ${m.content}`)
     .join("\n");
 }

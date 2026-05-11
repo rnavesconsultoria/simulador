@@ -1,7 +1,7 @@
 import { env } from "../config/env.js";
 import { formatConversationHistory } from "../lib/conversation-history.js";
 import { extractUsage } from "../lib/openai-usage.js";
-import { getOpenAiClient } from "../lib/openai-client.js";
+import { callOpenAiResponses } from "../lib/openai-call.js";
 import { loadPrompt } from "../lib/prompt-loader.js";
 import { renderPrompt } from "../lib/prompt-template.js";
 import { getSupabaseAdmin } from "../lib/supabase-admin.js";
@@ -9,14 +9,11 @@ import { reportJsonSchema } from "../schemas/report-schema.js";
 import { recordOpenAiUsage } from "./cost-service.js";
 import { getActivePromptVersion } from "./prompt-version-service.js";
 
-function parseDecimalScore(value) {
-  if (typeof value !== "string" || value.trim() === "") {
-    return null;
-  }
-
-  const normalized = value.replace(",", ".");
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : null;
+function clampScore(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (value < 0) return 0;
+  if (value > 10) return 10;
+  return Math.round(value * 2) / 2;
 }
 
 async function loadSimulationForReport(sessionId, userId) {
@@ -32,7 +29,7 @@ async function loadSimulationForReport(sessionId, userId) {
     throw new Error(`Failed to load simulation for report: ${error.message}`);
   }
 
-  return data;
+  return data ?? null;
 }
 
 async function loadMessages(sessionId) {
@@ -50,67 +47,41 @@ async function loadMessages(sessionId) {
   return data ?? [];
 }
 
-function ensureReportPayload(payload) {
-  const requiredFields = [
-    "P",
-    "A",
-    "C",
-    "E",
-    "Preparacao",
-    "Analise",
-    "Cocriacao",
-    "Engajamento",
-    "Resumo",
-    "Transcricao",
-    "Media",
-    "Recomendacoes"
-  ];
-
-  for (const field of requiredFields) {
-    if (typeof payload[field] !== "string") {
-      throw new Error(`Report payload is missing field ${field}.`);
-    }
-  }
-}
-
 export async function generateReportForSimulation({ sessionId, user }) {
   const simulation = await loadSimulationForReport(sessionId, user.id);
   if (!simulation) {
-    return {
-      ok: false,
-      reason: "simulation_not_found"
-    };
+    return { ok: false, reason: "simulation_not_found" };
   }
 
   const messages = await loadMessages(sessionId);
-  if (messages.length === 0) {
-    return {
-      ok: false,
-      reason: "empty_conversation"
-    };
+  const conversationActors = ["vendor", "client", "moderator"];
+  const hasConversation = messages.some((m) =>
+    m.content && (m.actor === "vendor" || m.actor === "client")
+  );
+  if (!hasConversation) {
+    return { ok: false, reason: "empty_conversation" };
   }
 
   const promptVersion = await getActivePromptVersion("gerente");
   const promptTemplate = await loadPrompt("gerente");
-  const threadCompleta = formatConversationHistory(messages);
-  const prompt = renderPrompt(promptTemplate, {
-    thread_completa: threadCompleta
-  });
+  const threadCompleta = formatConversationHistory(messages, { actors: conversationActors });
+  const prompt = renderPrompt(promptTemplate, { thread_completa: threadCompleta });
 
-  const openai = getOpenAiClient();
-  const response = await openai.responses.create({
-    model: env.openAiModelGerente,
-    input: prompt,
-    text: {
-      format: {
-        type: "json_schema",
-        ...reportJsonSchema
-      }
-    }
-  });
+  const response = await callOpenAiResponses(
+    {
+      model: env.openAiModelGerente,
+      input: prompt,
+      text: { format: { type: "json_schema", ...reportJsonSchema } }
+    },
+    { stage: "manager" }
+  );
 
-  const payload = JSON.parse(response.output_text);
-  ensureReportPayload(payload);
+  let payload;
+  try {
+    payload = JSON.parse(response.output_text);
+  } catch (error) {
+    throw new Error(`Invalid JSON from manager agent: ${error.message}`);
+  }
 
   await recordOpenAiUsage({
     sessionId,
@@ -126,11 +97,11 @@ export async function generateReportForSimulation({ sessionId, user }) {
       {
         session_id: sessionId,
         user_id: user.id,
-        questions_score: parseDecimalScore(payload.P),
-        analysis_score: parseDecimalScore(payload.A),
-        creativity_score: parseDecimalScore(payload.C),
-        engagement_score: parseDecimalScore(payload.E),
-        average_score: parseDecimalScore(payload.Media),
+        questions_score: clampScore(payload.P),
+        analysis_score: clampScore(payload.A),
+        creativity_score: clampScore(payload.C),
+        engagement_score: clampScore(payload.E),
+        average_score: clampScore(payload.Media),
         report_json: payload,
         report_summary: payload.Resumo,
         report_url: null,
@@ -157,8 +128,5 @@ export async function generateReportForSimulation({ sessionId, user }) {
     throw new Error(`Failed to finalize simulation: ${updateError.message}`);
   }
 
-  return {
-    ok: true,
-    report
-  };
+  return { ok: true, report };
 }

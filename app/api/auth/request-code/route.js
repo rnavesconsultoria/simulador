@@ -1,75 +1,72 @@
+import crypto from "node:crypto";
+import { errorResponse, internalError, readJsonBody } from "../../../../src/lib/api-error.js";
 import { NextResponse } from "next/server";
 import { env } from "../../../../src/config/env.js";
+import { getRequestIp, rateLimit } from "../../../../src/lib/rate-limit.js";
+import { isValidEmail } from "../../../../src/lib/validation.js";
 import { requestAccessCode } from "../../../../src/services/auth-service.js";
 
-function mapUser(user) {
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    level: user.level,
-    company: user.companies
-      ? {
-          id: user.companies.id,
-          tradeName: user.companies.trade_name,
-          cnpj: user.companies.cnpj
-        }
-      : null
-  };
+function generatePreviewCode() {
+  return crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
 }
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const email = body.email?.trim();
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (parseError) {
+      return errorResponse({
+        status: 400,
+        code: parseError.message === "payload_too_large" ? "payload_too_large" : "invalid_payload",
+        message: "Invalid request body."
+      });
+    }
 
-    if (!email) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: {
-            code: "missing_email",
-            message: "The field 'email' is required."
-          }
-        },
-        { status: 400 }
-      );
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    if (!isValidEmail(email)) {
+      return errorResponse({
+        status: 400,
+        code: "invalid_email",
+        message: "A valid e-mail is required."
+      });
+    }
+
+    const ip = getRequestIp(request);
+    const ipLimit = await rateLimit({
+      key: `request-code:ip:${ip}`,
+      limit: env.authRequestRateLimitPerMinute,
+      windowMs: 60_000
+    });
+    const emailLimit = await rateLimit({
+      key: `request-code:email:${email}`,
+      limit: env.authRequestRateLimitPerMinute,
+      windowMs: 60_000
+    });
+
+    if (!ipLimit.ok || !emailLimit.ok) {
+      return errorResponse({
+        status: 429,
+        code: "rate_limited",
+        message: "Too many requests. Please try again shortly."
+      });
     }
 
     const result = await requestAccessCode(email);
-    if (!result.ok) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: {
-            code: result.reason,
-            message: "User not found or inactive."
-          }
-        },
-        { status: 404 }
-      );
-    }
+
+    const allowPreview = !env.isProduction || env.showDevelopmentCodePreview;
+    const genericExpiresAt = new Date(Date.now() + env.authCodeTtlMinutes * 60 * 1000).toISOString();
 
     return NextResponse.json(
       {
         ok: true,
-        message: "Access code generated.",
-        expiresAt: result.expiresAt,
-        user: mapUser(result.user),
-        developmentCodePreview: process.env.NODE_ENV === "production" && !env.showDevelopmentCodePreview ? undefined : result.code
+        message: "If the e-mail is registered, a code has been issued.",
+        expiresAt: genericExpiresAt,
+        developmentCodePreview: allowPreview ? (result.ok ? result.code : generatePreviewCode()) : undefined
       },
       { status: 202 }
     );
   } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: {
-          code: "internal_error",
-          message: error.message ?? "Unexpected error."
-        }
-      },
-      { status: 500 }
-    );
+    return internalError(error);
   }
 }

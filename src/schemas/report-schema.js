@@ -1,3 +1,10 @@
+const scoreSchema = {
+  type: "number",
+  minimum: 0,
+  maximum: 10,
+  multipleOf: 0.5
+};
+
 export const reportJsonSchema = {
   name: "manager_report_payload",
   strict: true,
@@ -9,27 +16,25 @@ export const reportJsonSchema = {
       "A",
       "C",
       "E",
+      "Media",
       "Preparacao",
       "Analise",
       "Cocriacao",
       "Engajamento",
       "Resumo",
-      "Transcricao",
-      "Media",
       "Recomendacoes"
     ],
     properties: {
-      P: { type: "string" },
-      A: { type: "string" },
-      C: { type: "string" },
-      E: { type: "string" },
+      P: scoreSchema,
+      A: scoreSchema,
+      C: scoreSchema,
+      E: scoreSchema,
+      Media: scoreSchema,
       Preparacao: { type: "string" },
       Analise: { type: "string" },
       Cocriacao: { type: "string" },
       Engajamento: { type: "string" },
       Resumo: { type: "string" },
-      Transcricao: { type: "string" },
-      Media: { type: "string" },
       Recomendacoes: { type: "string" }
     }
   }

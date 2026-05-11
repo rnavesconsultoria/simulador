@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { env } from "../config/env.js";
 import { extractUsage } from "../lib/openai-usage.js";
-import { getOpenAiClient } from "../lib/openai-client.js";
+import { callOpenAiResponses } from "../lib/openai-call.js";
 import { loadPrompt } from "../lib/prompt-loader.js";
 import { renderPrompt } from "../lib/prompt-template.js";
 import { getSupabaseAdmin } from "../lib/supabase-admin.js";
@@ -83,11 +83,7 @@ function assertScenarioPayload(payload, expectedSellerName, userLevel) {
   }
 
   const objectionCount = negociacao.objecoes.length;
-  const expectedCountByLevel = {
-    "1": 1,
-    "2": 2,
-    "3": 3
-  };
+  const expectedCountByLevel = { "1": 1, "2": 2, "3": 3 };
 
   const expectedCount = expectedCountByLevel[String(userLevel)];
   if (expectedCount && objectionCount !== expectedCount) {
@@ -101,35 +97,57 @@ function assertScenarioPayload(payload, expectedSellerName, userLevel) {
   }
 }
 
+async function generateScenarioPayload({ promptTemplate, briefing, username, userlevel }) {
+  let lastError;
+  const responses = [];
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const correction = attempt === 1
+      ? ""
+      : `\n\nObservação: a tentativa anterior falhou na validação. Retorne **estritamente** o JSON exigido.`;
+    const prompt = renderPrompt(promptTemplate, {
+      briefing,
+      username,
+      userlevel
+    }) + correction;
+
+    const response = await callOpenAiResponses(
+      {
+        model: env.openAiModelCriador,
+        input: prompt,
+        text: { format: { type: "json_schema", ...scenarioJsonSchema } }
+      },
+      { stage: "creator" }
+    );
+    responses.push(response);
+
+    try {
+      const payload = JSON.parse(response.output_text);
+      assertScenarioPayload(payload, username, userlevel);
+      return { payload, response, responses };
+    } catch (error) {
+      lastError = error;
+      console.warn(`[scenario-service] attempt ${attempt} failed: ${error.message}`);
+    }
+  }
+
+  throw lastError ?? new Error("Failed to generate scenario.");
+}
+
 export async function generateScenarioForUser(user) {
   if (!user?.companies?.briefing_markdown) {
     throw new Error("User does not have an associated company briefing.");
   }
 
   const promptTemplate = await loadPrompt("criador");
-  const prompt = renderPrompt(promptTemplate, {
+  const { payload: scenarioPayload, response, responses } = await generateScenarioPayload({
+    promptTemplate,
     briefing: user.companies.briefing_markdown,
     username: user.name,
     userlevel: normalizeUserLevel(user.level)
   });
 
-  const openai = getOpenAiClient();
-  const response = await openai.responses.create({
-    model: env.openAiModelCriador,
-    input: prompt,
-    text: {
-      format: {
-        type: "json_schema",
-        ...scenarioJsonSchema
-      }
-    }
-  });
-
-  const scenarioPayload = JSON.parse(response.output_text);
-  assertScenarioPayload(scenarioPayload, user.name, user.level);
   const sessionKey = randomSessionKey();
   const supabase = getSupabaseAdmin();
-
   const promptVersion = await getActivePromptVersion("criador");
 
   const { data: scenario, error: scenarioError } = await supabase
@@ -158,21 +176,23 @@ export async function generateScenarioForUser(user) {
       company_id: user.company_id,
       scenario_id: scenario.id,
       status: "scenario_ready",
-      started_at: new Date().toISOString()
+      current_phase: "abertura"
     })
-    .select("id, session_key, status")
+    .select("id, session_key, status, current_phase")
     .single();
 
   if (sessionError) {
     throw new Error(`Failed to create simulation session: ${sessionError.message}`);
   }
 
-  await recordOpenAiUsage({
-    sessionId: simulationSession.id,
-    stage: "creator",
-    model: env.openAiModelCriador,
-    usage: extractUsage(response)
-  });
+  for (const attemptResponse of responses) {
+    await recordOpenAiUsage({
+      sessionId: simulationSession.id,
+      stage: "creator",
+      model: env.openAiModelCriador,
+      usage: extractUsage(attemptResponse)
+    });
+  }
 
   return {
     scenario,

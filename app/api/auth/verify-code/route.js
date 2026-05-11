@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { errorResponse, internalError, readJsonBody } from "../../../../src/lib/api-error.js";
+import { env } from "../../../../src/config/env.js";
+import { getRequestIp, rateLimit } from "../../../../src/lib/rate-limit.js";
+import { isValidAuthCode, isValidEmail } from "../../../../src/lib/validation.js";
 import { createAppSession, verifyAccessCode } from "../../../../src/services/auth-service.js";
 
 function mapUser(user) {
@@ -19,35 +23,55 @@ function mapUser(user) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const email = body.email?.trim();
-    const code = body.code?.trim();
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (parseError) {
+      return errorResponse({
+        status: 400,
+        code: parseError.message === "payload_too_large" ? "payload_too_large" : "invalid_payload",
+        message: "Invalid request body."
+      });
+    }
 
-    if (!email || !code) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: {
-            code: "missing_credentials",
-            message: "Fields 'email' and 'code' are required."
-          }
-        },
-        { status: 400 }
-      );
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const code = typeof body.code === "string" ? body.code.trim() : "";
+
+    if (!isValidEmail(email) || !isValidAuthCode(code)) {
+      return errorResponse({
+        status: 400,
+        code: "invalid_credentials",
+        message: "Invalid e-mail or code format."
+      });
+    }
+
+    const ip = getRequestIp(request);
+    const ipLimit = await rateLimit({
+      key: `verify-code:ip:${ip}`,
+      limit: 10,
+      windowMs: 60_000
+    });
+    const emailLimit = await rateLimit({
+      key: `verify-code:email:${email}`,
+      limit: env.authMaxVerifyAttempts,
+      windowMs: env.authCodeTtlMinutes * 60_000
+    });
+
+    if (!ipLimit.ok || !emailLimit.ok) {
+      return errorResponse({
+        status: 429,
+        code: "rate_limited",
+        message: "Too many attempts. Please request a new code."
+      });
     }
 
     const result = await verifyAccessCode(email, code);
     if (!result.ok) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: {
-            code: result.reason,
-            message: "Code is invalid or expired."
-          }
-        },
-        { status: 401 }
-      );
+      return errorResponse({
+        status: 401,
+        code: "invalid_credentials",
+        message: "Code is invalid or expired."
+      });
     }
 
     const session = await createAppSession(result.user.id);
@@ -59,15 +83,6 @@ export async function POST(request) {
       user: mapUser(result.user)
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: {
-          code: "internal_error",
-          message: error.message ?? "Unexpected error."
-        }
-      },
-      { status: 500 }
-    );
+    return internalError(error);
   }
 }

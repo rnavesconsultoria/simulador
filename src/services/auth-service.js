@@ -1,18 +1,16 @@
 import crypto from "node:crypto";
 import { env } from "../config/env.js";
-import { generateAppSessionToken, hashAppSessionToken } from "../lib/app-session-token.js";
+import {
+  generateAppSessionToken,
+  hashAccessCode,
+  hashAppSessionToken
+} from "../lib/app-session-token.js";
 import { getSupabaseAdmin } from "../lib/supabase-admin.js";
 
 function generateNumericCode(length = 6) {
-  let code = "";
-  for (let index = 0; index < length; index += 1) {
-    code += crypto.randomInt(0, 10).toString();
-  }
-  return code;
-}
-
-function hashCode(code) {
-  return crypto.createHash("sha256").update(code).digest("hex");
+  const buffer = crypto.randomBytes(4);
+  const value = buffer.readUInt32BE(0) % 10 ** length;
+  return value.toString().padStart(length, "0");
 }
 
 export async function findUserByEmail(email) {
@@ -57,10 +55,22 @@ export async function requestAccessCode(email) {
     };
   }
 
-  const code = generateNumericCode();
-  const codeHash = hashCode(code);
-  const expiresAt = new Date(Date.now() + env.authCodeTtlMinutes * 60 * 1000).toISOString();
   const supabase = getSupabaseAdmin();
+  const nowIso = new Date().toISOString();
+
+  const { error: invalidateError } = await supabase
+    .from("access_codes")
+    .update({ used_at: nowIso })
+    .eq("user_id", user.id)
+    .is("used_at", null);
+
+  if (invalidateError) {
+    throw new Error(`Failed to invalidate previous codes: ${invalidateError.message}`);
+  }
+
+  const code = generateNumericCode();
+  const codeHash = hashAccessCode(code, env.appSessionSecret);
+  const expiresAt = new Date(Date.now() + env.authCodeTtlMinutes * 60 * 1000).toISOString();
 
   const { error } = await supabase.from("access_codes").insert({
     user_id: user.id,
@@ -94,7 +104,7 @@ export async function verifyAccessCode(email, code) {
 
   const { data, error } = await supabase
     .from("access_codes")
-    .select("id, code_hash, expires_at, used_at")
+    .select("id, code_hash, expires_at, used_at, attempts")
     .eq("user_id", user.id)
     .is("used_at", null)
     .gte("expires_at", nowIso)
@@ -113,8 +123,29 @@ export async function verifyAccessCode(email, code) {
     };
   }
 
-  const isValid = hashCode(code) === data.code_hash;
+  if ((data.attempts ?? 0) >= env.authMaxVerifyAttempts) {
+    await supabase
+      .from("access_codes")
+      .update({ used_at: nowIso })
+      .eq("id", data.id);
+    return {
+      ok: false,
+      reason: "too_many_attempts"
+    };
+  }
+
+  const candidateHash = hashAccessCode(code, env.appSessionSecret);
+  const expectedBuf = Buffer.from(data.code_hash, "hex");
+  const candidateBuf = Buffer.from(candidateHash, "hex");
+  const isValid =
+    expectedBuf.length === candidateBuf.length &&
+    crypto.timingSafeEqual(expectedBuf, candidateBuf);
+
   if (!isValid) {
+    await supabase
+      .from("access_codes")
+      .update({ attempts: (data.attempts ?? 0) + 1 })
+      .eq("id", data.id);
     return {
       ok: false,
       reason: "invalid_code"
@@ -183,14 +214,37 @@ export async function findUserByAppSessionToken(token) {
     return null;
   }
 
-  const { error: touchError } = await supabase
-    .from("app_sessions")
-    .update({ last_used_at: nowIso })
-    .eq("id", session.id);
-
-  if (touchError) {
-    throw new Error(`Failed to update app session usage: ${touchError.message}`);
+  const user = await findUserById(session.user_id);
+  if (!user) {
+    return null;
   }
 
-  return findUserById(session.user_id);
+  supabase
+    .from("app_sessions")
+    .update({ last_used_at: nowIso })
+    .eq("id", session.id)
+    .then(() => null, () => null);
+
+  return { user, sessionId: session.id };
+}
+
+export async function revokeAppSession(token) {
+  if (!token) {
+    return { ok: false, reason: "missing_token" };
+  }
+
+  const tokenHash = hashAppSessionToken(token, env.appSessionSecret);
+  const supabase = getSupabaseAdmin();
+
+  const { error } = await supabase
+    .from("app_sessions")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("token_hash", tokenHash)
+    .is("revoked_at", null);
+
+  if (error) {
+    throw new Error(`Failed to revoke session: ${error.message}`);
+  }
+
+  return { ok: true };
 }

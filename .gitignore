@@ -7,3 +7,5 @@ dist
 build
 npm-debug.log*
 supabase/.temp
+
+.vercel
