@@ -547,7 +547,14 @@ export function SimulatorApp() {
   if (!hydrated) {
     return (
       <div className="shell">
-        <div className="loading-shell">Carregando…</div>
+        <div className="loading-shell">
+          <img
+            src="/Logos/Vertical branco transp.svg"
+            alt="R Naves Consultoria"
+            className="brand-logo-vertical"
+          />
+          <span>Carregando…</span>
+        </div>
       </div>
     );
   }
@@ -607,10 +614,13 @@ export function SimulatorApp() {
     <div className="shell">
       <nav className="app-navbar">
         <div className="navbar-left">
-          <div className="brand">
-            <div className="brand-mark" aria-hidden="true">RN</div>
-            <span className="brand-name">R Naves Consultoria</span>
-          </div>
+          <a href="/" className="brand" aria-label="R Naves Consultoria">
+            <img
+              src="/Logos/Horizontal branco transp.svg"
+              alt="R Naves Consultoria"
+              className="brand-logo"
+            />
+          </a>
         </div>
         <div className="navbar-status">
           <span className={`health-dot${state.healthOk ? " ok" : ""}`} aria-hidden="true" />

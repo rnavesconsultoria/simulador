@@ -99,11 +99,15 @@ select {
 }
 
 .loading-shell {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: 100vh;
   padding: 80px 24px;
   color: var(--muted);
+  text-align: center;
 }
 
 /* ─── Top navbar ─── */
@@ -130,30 +134,26 @@ select {
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   margin: 0;
+  text-decoration: none;
+  color: inherit;
 }
 
-.brand-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #fff;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  box-shadow: 0 2px 8px var(--accent-glow);
+.brand-logo {
+  display: block;
+  height: 28px;
+  width: auto;
 }
 
-.brand-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
+.brand-logo-vertical {
+  display: block;
+  height: 140px;
+  width: auto;
+  margin-bottom: 18px;
+  opacity: 0.92;
 }
 
 .navbar-status {
