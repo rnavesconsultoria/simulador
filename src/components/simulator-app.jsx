@@ -683,7 +683,7 @@ export function SimulatorApp() {
       <div className="shell">
         <div className="loading-shell">
           <img
-            src="/Logos/Vertical%20branco.svg"
+            src="/Logos/vertical-white.svg"
             alt="R Naves Consultoria"
             className="brand-logo-vertical"
           />
@@ -750,7 +750,7 @@ export function SimulatorApp() {
         <div className="navbar-left">
           <a href="/" className="brand" aria-label="R Naves Consultoria">
             <img
-              src="/Logos/Horizontal%20branco.svg"
+              src="/Logos/horizontal-white.svg"
               alt="R Naves Consultoria"
               className="brand-logo"
             />
@@ -806,12 +806,12 @@ export function SimulatorApp() {
 
             <div className="welcome-hero">
               <img
-                src="/Logos/Horizontal%20preto%20transp.png"
+                src="/Logos/horizontal-black.png"
                 alt="R Naves Consultoria"
                 className="welcome-hero-logo-horizontal"
               />
               <img
-                src="/Logos/Vertical%20preto%20transp.png"
+                src="/Logos/vertical-black.png"
                 alt="R Naves Consultoria"
                 className="welcome-hero-logo-vertical"
               />
