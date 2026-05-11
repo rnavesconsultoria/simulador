@@ -195,7 +195,7 @@ Cada objeção profunda tem um `gatilho_revelacao`: a condição (perguntas espe
 
 ## Regras de qualidade
 
-- `contexto_vendedor` deve ser curto, objetivo, sem detalhes excessivos. Apenas o que o vendedor saberia ANTES da conversa começar (cargo do contato, empresa, e talvez 1 dado público).
+- `contexto_vendedor` deve trazer 3 a 5 frases com informações **públicas** que um vendedor real teria depois de uma pesquisa rápida no LinkedIn, no site da empresa ou em uma busca pública. Inclua quando fizer sentido: cargo e nome do contato, nome e segmento da empresa, cidade/região, porte (pequena/média/grande) ou faixa pública de operação, canais de venda visíveis, contexto de mercado/setor, e tempo do contato no cargo se for plausível encontrar publicamente. NÃO escreva nada que pertença ao mundo interno do cliente: nada de dores específicas, restrições orçamentárias, critérios de decisão, comitê de aprovação, frustrações com fornecedores anteriores, autonomia decisória ou hipóteses de objeções. Essas informações devem ser descobertas pelo vendedor durante a etapa Analisar do PACE.
 - `contexto_gerente` deve ser rico e detalhado: dores explícitas e implícitas, contexto pessoal/profissional, restrições orçamentárias, perfil decisor, critérios de compra, histórico com concorrentes.
 - `objecoes` devem ser específicas, plausíveis e negociáveis (não absolutas).
 - `beneficios_ocultos` devem ser plausíveis, descobríveis durante a conversa, e úteis para diferenciar uma venda mediana de uma venda excelente.

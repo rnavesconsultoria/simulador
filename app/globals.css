@@ -866,7 +866,7 @@ button:disabled {
   flex-direction: column;
   gap: 16px;
   border-left: 1px solid var(--line);
-  padding: 22px;
+  padding: 60px 22px 22px;
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1220,6 +1220,10 @@ button:disabled {
 
   .chat-log {
     padding: 16px 16px 12px;
+  }
+
+  .floating-logout.in-sim {
+    display: none;
   }
 
   .simulation-header {

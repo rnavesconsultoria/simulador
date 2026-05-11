@@ -775,10 +775,10 @@ export function SimulatorApp() {
 
   return (
     <div className="shell">
-      {state.user ? (
+      {state.user && !state.report ? (
         <button
           type="button"
-          className="floating-logout"
+          className={`floating-logout${state.scenario ? " in-sim" : ""}`}
           onClick={() => handleLogout({ confirm: true })}
           aria-label="Sair da sessão"
           title="Sair"
