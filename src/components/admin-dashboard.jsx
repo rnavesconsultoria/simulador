@@ -163,13 +163,35 @@ export function AdminDashboard() {
     URL.revokeObjectURL(a.href);
   }
 
+  async function signOut() {
+    try {
+      if (token) {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setToken("");
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
+  }
+
   if (!token) {
     return (
       <div className="admin-shell">
         <div className="admin-empty">
           <h1>Acesso restrito</h1>
           <p>
-            É necessário estar autenticado. <a href="/">Voltar ao login</a>.
+            É necessário estar autenticado como admin. <a href="/">Entrar</a>.
           </p>
         </div>
       </div>
@@ -263,10 +285,25 @@ export function AdminDashboard() {
             Exportar CSV
           </button>
         </div>
+
+        <div className="admin-sidebar-footer">
+          <button type="button" className="admin-btn admin-btn-ghost" onClick={signOut}>
+            Sair / trocar de conta
+          </button>
+        </div>
       </aside>
 
       <main className="admin-main">
-        {error ? <div className="admin-error">{error}</div> : null}
+        {error ? (
+          <div className="admin-error">
+            <span>{error}</span>
+            {/admin access required|forbidden/i.test(error) ? (
+              <button type="button" className="admin-btn admin-btn-secondary" onClick={signOut}>
+                Sair e entrar com outra conta
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <section className="admin-kpis">
           <div className="admin-kpi">

@@ -1634,9 +1634,33 @@ button:disabled {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #991b1b;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-radius: 8px;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-btn-ghost {
+  background: transparent;
+  color: #6b7280;
+  border-color: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.admin-btn-ghost:hover:not(:disabled) {
+  background: transparent;
+  color: #b91c1c;
+}
+
+.admin-sidebar-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .admin-loading {
