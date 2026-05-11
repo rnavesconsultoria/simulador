@@ -286,56 +286,13 @@ export function SimulatorApp() {
       ? "feedback_form"
       : "report_view";
 
-  // Welcome messages: seed the chat once after hydration based on auth state
+  // Welcome flag (used to know when the static welcome copy has been shown
+  // at least once; we no longer seed welcome messages into the chat itself —
+  // a static, flowing copy block above the chat carries the message now).
   useEffect(() => {
     if (!hydrated || state.welcomeShown) return;
-    if (state.chatItems.length > 0) {
-      setState((c) => ({ ...c, welcomeShown: true }));
-      return;
-    }
-    const messages = state.user
-      ? [
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text: `Olá ${state.user.name}, que bom te ver de novo! Vou preparar um cenário de negociação especialmente para você.`
-          },
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text: "Leva apenas alguns segundos…"
-          }
-        ]
-      : [
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text: "Olá, seja bem-vindo à IA de Treinamento da RNaves Consultoria e Treinamento."
-          },
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text:
-              "Nossa Inteligência Artificial está aqui para você treinar o quanto quiser e evoluir com as avaliações dadas no final. Isso faz parte da melhoria contínua das Técnicas de Vendas Consultivas."
-          },
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text:
-              "Para ter acesso ao treinamento, sua empresa deve ter contratado o sistema e você estar cadastrado. Vamos verificar."
-          },
-          {
-            kind: "assistant",
-            label: "IA R Naves",
-            text: "Por favor, digite seu e-mail:"
-          }
-        ];
-    setState((c) => ({
-      ...c,
-      welcomeShown: true,
-      chatItems: [...c.chatItems, ...messages]
-    }));
-  }, [hydrated, state.user, state.welcomeShown, state.chatItems.length]);
+    setState((c) => ({ ...c, welcomeShown: true }));
+  }, [hydrated, state.welcomeShown]);
 
   // Auto-create scenario once the user is authenticated
   useEffect(() => {
@@ -882,6 +839,46 @@ export function SimulatorApp() {
                 IA R Naves — Sua especialista em treinamento de vendas
               </p>
             </div>
+
+            {!state.scenario ? (
+              <div className="welcome-copy">
+                {flowStep === "awaiting_email" ? (
+                  <>
+                    <p>
+                      <strong>Olá! Que bom ter você aqui.</strong> Esta é a IA de Treinamento da
+                      RNaves Consultoria — sua parceira para treinar técnicas de vendas
+                      consultivas quantas vezes quiser, evoluir a cada conversa e receber uma
+                      avaliação personalizada no final de cada simulação.
+                    </p>
+                    <p>
+                      Cada cenário é único: você vai negociar com um cliente diferente, com dores
+                      reais, e a cada sessão a sua leitura de cliente fica mais afiada. Não tem
+                      medo de errar aqui — é treino, e errar faz parte do aprendizado.
+                    </p>
+                    <p>
+                      Para começar, preciso saber quem você é. Sua empresa precisa ter contratado
+                      o sistema e você estar cadastrado. <strong>Digite seu e-mail no campo abaixo</strong> e vamos juntos.
+                    </p>
+                  </>
+                ) : flowStep === "awaiting_code" ? (
+                  <p>
+                    Perfeito! Acabei de te enviar um código por e-mail. Cole o código no campo
+                    abaixo para validarmos seu acesso. Estamos quase começando.
+                  </p>
+                ) : flowStep === "creating_scenario" ? (
+                  <>
+                    <p>
+                      <strong>
+                        Que bom te ver, {state.user?.name?.split(/\s+/)[0] ?? "vendedor(a)"}!
+                      </strong>{" "}
+                      Já estou montando um cenário de negociação especialmente para você. Cada
+                      treino te aproxima de uma venda consultiva mais sólida.
+                    </p>
+                    <p className="welcome-copy-muted">Leva só alguns segundos…</p>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
 
             {state.scenario ? (
               <div className="simulation-header">
