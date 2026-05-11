@@ -829,7 +829,7 @@ export function SimulatorApp() {
                 className="welcome-hero-logo-vertical"
               />
               <p className="welcome-hero-tagline">
-                IA R Naves — Sua especialista em treinamento de vendas
+                Sua especialista em treinamento de vendas
               </p>
             </div>
 
