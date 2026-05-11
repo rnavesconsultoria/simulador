@@ -355,7 +355,10 @@ export function AdminDashboard() {
         return Number.isFinite(Number(point?.average)) ? Number(point.average) : 0;
       })
     }));
-    const formattedLabels = labels.map((l) => l.slice(5));
+    const formattedLabels = labels.map((l) => {
+      const [, m, d] = l.split("-");
+      return `${d}/${m}`;
+    });
     return { labels: formattedLabels, series };
   }, [data]);
 
