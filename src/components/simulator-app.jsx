@@ -3,13 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_KEY = "rnaves.simulator.session";
-const FEEDBACK_FIELDS = [
-  { name: "realismScore", label: "Realismo" },
-  { name: "challengeScore", label: "Desafio" },
-  { name: "interactionQualityScore", label: "Interação" },
-  { name: "feedbackUtilityScore", label: "Utilidade" },
-  { name: "learningImpactScore", label: "Aprendizado" }
+const FEEDBACK_FIELDS_PRE = [
+  { name: "realismScore", label: "Realismo da simulação" },
+  { name: "challengeScore", label: "Nível de desafio" },
+  { name: "interactionQualityScore", label: "Qualidade da interação" }
 ];
+
+const FEEDBACK_FIELDS_POST = [
+  { name: "feedbackUtilityScore", label: "Utilidade do relatório" },
+  { name: "learningImpactScore", label: "Impacto no aprendizado" }
+];
+
+const FEEDBACK_FIELDS = [...FEEDBACK_FIELDS_PRE, ...FEEDBACK_FIELDS_POST];
 
 const initialState = {
   email: "",
@@ -24,6 +29,7 @@ const initialState = {
   shouldEnd: false,
   activeRequest: "",
   feedbackSaved: false,
+  feedbackPhase1Done: false,
   bannerError: "",
   welcomeShown: false,
   chatItems: []
@@ -276,7 +282,7 @@ export function SimulatorApp() {
     state.activeRequest === "generate-report" || Boolean(state.report);
   const screenPhase = !isEndingSession
     ? "simulation"
-    : !state.feedbackSaved
+    : !state.feedbackPhase1Done
       ? "feedback_form"
       : "report_view";
 
@@ -601,8 +607,30 @@ export function SimulatorApp() {
     }
   }
 
+  function feedbackPreIsValid() {
+    return FEEDBACK_FIELDS_PRE.every(
+      (f) => feedbackScores[f.name] >= 1 && feedbackScores[f.name] <= 5
+    );
+  }
+
+  function feedbackPostIsValid() {
+    return FEEDBACK_FIELDS_POST.every(
+      (f) => feedbackScores[f.name] >= 1 && feedbackScores[f.name] <= 5
+    );
+  }
+
   function feedbackIsValid() {
-    return Object.values(feedbackScores).every((score) => score >= 1 && score <= 5);
+    return feedbackPreIsValid() && feedbackPostIsValid();
+  }
+
+  function handleFeedbackPreSubmit(event) {
+    event.preventDefault();
+    if (!feedbackPreIsValid()) {
+      showError(new Error("Avalie os 3 itens de 1 a 5."));
+      return;
+    }
+    clearError();
+    setState((c) => ({ ...c, feedbackPhase1Done: true }));
   }
 
   async function handleFeedbackSubmit(event) {
@@ -691,6 +719,7 @@ export function SimulatorApp() {
       lastIntent: "",
       shouldEnd: false,
       feedbackSaved: false,
+      feedbackPhase1Done: false,
       welcomeShown: false,
       chatItems: [],
       bannerError: ""
@@ -1119,40 +1148,27 @@ export function SimulatorApp() {
 
           <section className="fb-section">
             <h2 className="fb-h2">Como foi essa simulação para você?</h2>
-            <form className="fb-form-card" onSubmit={handleFeedbackSubmit}>
+            <form className="fb-form-card" onSubmit={handleFeedbackPreSubmit}>
               <div className="fb-rating-grid">
-                {FEEDBACK_FIELDS.map((field) => (
+                {FEEDBACK_FIELDS_PRE.map((field) => (
                   <RatingInput
                     key={field.name}
                     name={field.name}
                     label={field.label}
                     value={feedbackScores[field.name]}
-                    disabled={isBusy("send-feedback")}
+                    disabled={false}
                     onChange={(score) =>
                       setFeedbackScores((current) => ({ ...current, [field.name]: score }))
                     }
                   />
                 ))}
               </div>
-              <label className="fb-field">
-                <span>Comentário (opcional)</span>
-                <textarea
-                  name="userFeedback"
-                  rows={3}
-                  maxLength={4000}
-                  placeholder="Como foi usar o simulador?"
-                  value={feedbackComment}
-                  onChange={(event) => setFeedbackComment(event.target.value)}
-                  disabled={isBusy("send-feedback")}
-                />
-              </label>
               <button
                 type="submit"
                 className="fb-btn fb-btn-primary"
-                disabled={isBusy("send-feedback") || !feedbackIsValid()}
-                aria-busy={isBusy("send-feedback")}
+                disabled={!feedbackPreIsValid()}
               >
-                {isBusy("send-feedback") ? "Salvando…" : "Salvar e ver relatório"}
+                Continuar para o relatório
               </button>
             </form>
           </section>
@@ -1411,6 +1427,53 @@ export function SimulatorApp() {
               </div>
             </section>
           ) : null}
+
+          <section className="fb-section">
+            <h2 className="fb-h2">Para finalizar, o que você achou do relatório?</h2>
+            <p className="fb-muted fb-tight">
+              Dê uma nota e, se quiser, deixe um comentário sobre o feedback que acabou de receber.
+            </p>
+            {state.feedbackSaved ? (
+              <div className="fb-success-card" role="status">Avaliação registrada. Obrigado!</div>
+            ) : (
+              <form className="fb-form-card" onSubmit={handleFeedbackSubmit}>
+                <div className="fb-rating-grid">
+                  {FEEDBACK_FIELDS_POST.map((field) => (
+                    <RatingInput
+                      key={field.name}
+                      name={field.name}
+                      label={field.label}
+                      value={feedbackScores[field.name]}
+                      disabled={isBusy("send-feedback")}
+                      onChange={(score) =>
+                        setFeedbackScores((current) => ({ ...current, [field.name]: score }))
+                      }
+                    />
+                  ))}
+                </div>
+                <label className="fb-field">
+                  <span>Quer me dar algum feedback dessa sua interação? (opcional)</span>
+                  <textarea
+                    name="userFeedback"
+                    rows={3}
+                    maxLength={4000}
+                    placeholder="Deixe seu feedback…"
+                    value={feedbackComment}
+                    onChange={(event) => setFeedbackComment(event.target.value)}
+                    disabled={isBusy("send-feedback")}
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="fb-btn fb-btn-primary"
+                  disabled={isBusy("send-feedback") || !feedbackPostIsValid()}
+                  aria-busy={isBusy("send-feedback")}
+                >
+                  {isBusy("send-feedback") ? "Salvando…" : "Enviar avaliação"}
+                </button>
+              </form>
+            )}
+          </section>
 
           <div className="fb-btn-row">
             <button type="button" className="fb-btn fb-btn-primary" onClick={handleNewSimulation}>
