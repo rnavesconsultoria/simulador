@@ -2439,7 +2439,7 @@ button:disabled {
 }
 
 .dash-header-logo img {
-  height: 46px;
+  height: 64px;
   width: auto;
   display: block;
   filter: brightness(0) invert(1);
