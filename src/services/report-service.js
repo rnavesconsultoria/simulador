@@ -102,6 +102,8 @@ export async function generateReportForSimulation({ sessionId, user }) {
           severidade: m.metadata?.severidade ?? null,
           categoria: m.metadata?.categoria ?? null,
           acao_sugerida: m.metadata?.acao_sugerida ?? null,
+          confianca: m.metadata?.confianca ?? null,
+          fase: m.metadata?.fase_atual ?? null,
           em: m.created_at
         })),
         null,

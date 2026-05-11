@@ -40,8 +40,8 @@ const validScenarioSchema = {
   required: ["nome", "nota_corte_objecao", "nota_corte_preco"],
   properties: {
     nome: { type: "string" },
-    nota_corte_objecao: { type: "string" },
-    nota_corte_preco: { type: "string" }
+    nota_corte_objecao: { type: "number" },
+    nota_corte_preco: { type: "number" }
   }
 };
 
@@ -93,8 +93,8 @@ export const scenarioJsonSchema = {
             properties: {
               nivel: { type: "string" },
               descricao: { type: "string" },
-              nota_corte_objecao: { type: "string" },
-              nota_corte_preco: { type: "string" },
+              nota_corte_objecao: { type: "number" },
+              nota_corte_preco: { type: "number" },
               cenarios_validos: {
                 type: "array",
                 items: validScenarioSchema
@@ -143,8 +143,8 @@ export const scenarioJsonSchema = {
                 additionalProperties: false,
                 required: ["negociacao_objecoes", "negociacao_preco"],
                 properties: {
-                  negociacao_objecoes: { type: "string" },
-                  negociacao_preco: { type: "string" }
+                  negociacao_objecoes: { type: "number" },
+                  negociacao_preco: { type: "number" }
                 }
               }
             }

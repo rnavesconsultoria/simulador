@@ -241,6 +241,8 @@ export async function processVendorMessage({ sessionId, user, message }) {
     usage: extractUsage(moderator.response)
   });
 
+  const faseAtualForViolation = simulation.current_phase ?? "preparar";
+
   await insertMessage({
     sessionId,
     role: "assistant",
@@ -254,11 +256,17 @@ export async function processVendorMessage({ sessionId, user, message }) {
       prompt_version_id: moderatorPromptVersion?.id ?? null,
       categoria: moderator.payload.categoria ?? null,
       severidade: moderator.payload.severidade ?? null,
-      acao_sugerida: moderator.payload.acao_sugerida ?? null
+      acao_sugerida: moderator.payload.acao_sugerida ?? null,
+      confianca: moderator.payload.confianca ?? null,
+      fase_atual: faseAtualForViolation
     }
   });
 
-  const shouldForceEnd = moderator.payload.acao_sugerida === "encerrar_sessao";
+  // Protection rule: encerrar_sessao only fires when the moderator is confident.
+  // Otherwise we treat it as a warning so the seller isn't kicked unfairly.
+  const shouldForceEnd =
+    moderator.payload.acao_sugerida === "encerrar_sessao" &&
+    moderator.payload.confianca === "alta";
   if (wasModerated && shouldForceEnd) {
     return {
       ok: true,

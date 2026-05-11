@@ -1341,12 +1341,29 @@ export function SimulatorApp() {
             const allDeep = (negociacao.objecoes_profundas ?? [])
               .map((o) => o.descricao)
               .filter(Boolean);
-            const discoveredB = state.report.report_json?.Beneficios_ocultos_descobertos ?? [];
-            const discoveredO = state.report.report_json?.Objecoes_profundas_descobertas ?? [];
-            const discovered = [...discoveredB, ...discoveredO].filter(Boolean);
+            const rawDiscoveredB = state.report.report_json?.Beneficios_ocultos_descobertos ?? [];
+            const rawDiscoveredO = state.report.report_json?.Objecoes_profundas_descobertas ?? [];
+            // Discovery items can come as legacy plain strings (v2.0.0) or as
+            // {nome, turno, citacao_vendedor} objects (v2.1.0). Normalize.
+            const toDiscovery = (item) => {
+              if (!item) return null;
+              if (typeof item === "string") return { nome: item, turno: null, citacao: "" };
+              return {
+                nome: item.nome ?? item.descricao ?? "",
+                turno: typeof item.turno === "number" ? item.turno : null,
+                citacao: item.citacao_vendedor ?? ""
+              };
+            };
+            const discovered = [...rawDiscoveredB, ...rawDiscoveredO]
+              .map(toDiscovery)
+              .filter((d) => d && d.nome);
             const norm = (s) => String(s).toLowerCase().slice(0, 18);
             const isCovered = (item) =>
-              discovered.some((d) => norm(d) && (norm(item).includes(norm(d)) || norm(d).includes(norm(item))));
+              discovered.some(
+                (d) =>
+                  norm(d.nome) &&
+                  (norm(item).includes(norm(d.nome)) || norm(d.nome).includes(norm(item)))
+              );
             const toExplore = [
               ...allBenefits.filter((b) => !isCovered(b)),
               ...allDeep.filter((o) => !isCovered(o))
@@ -1370,7 +1387,15 @@ export function SimulatorApp() {
                               <path d="m9 12 2 2 4-4" />
                             </svg>
                           </span>
-                          <span>{d}</span>
+                          <div>
+                            <div>{d.nome}</div>
+                            {d.turno || d.citacao ? (
+                              <div className="fb-discovery-meta">
+                                {d.turno ? <span>turno {d.turno}</span> : null}
+                                {d.citacao ? <span>“{d.citacao}”</span> : null}
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
                       ))
                     ) : (
@@ -1413,7 +1438,27 @@ export function SimulatorApp() {
               <h2 className="fb-h2">Próximas ações</h2>
               <div className="fb-editorial-card">
                 {(() => {
-                  const raw = (state.report.report_json?.Recomendacoes ?? state.report.report_summary ?? "").trim();
+                  const rec = state.report.report_json?.Recomendacoes;
+                  // v2.1.0: array of {titulo, descricao, prioritaria}
+                  if (Array.isArray(rec) && rec.length > 0 && typeof rec[0] === "object") {
+                    return (
+                      <ol className="fb-recommendation-list">
+                        {rec.map((item, i) => (
+                          <li key={i} className={item.prioritaria ? "is-priority" : ""}>
+                            <div className="fb-rec-title">
+                              {item.prioritaria ? (
+                                <span className="fb-rec-priority">prioridade</span>
+                              ) : null}
+                              <strong>{item.titulo}</strong>
+                            </div>
+                            {item.descricao ? <p>{item.descricao}</p> : null}
+                          </li>
+                        ))}
+                      </ol>
+                    );
+                  }
+                  // v2.0.0 legacy: single string "1. ... 2. ..."
+                  const raw = (typeof rec === "string" ? rec : state.report.report_summary ?? "").trim();
                   if (!raw) return null;
                   const parts = raw
                     .split(/(?<=[.!?])\s+(?=\d+[.)]\s)/)

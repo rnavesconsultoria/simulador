@@ -12,6 +12,28 @@ export const REPORT_RESULTS = [
   "inconclusivo"
 ];
 
+const recommendationSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["titulo", "descricao", "prioritaria"],
+  properties: {
+    titulo: { type: "string" },
+    descricao: { type: "string" },
+    prioritaria: { type: "boolean" }
+  }
+};
+
+const discoverySchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["nome", "turno", "citacao_vendedor"],
+  properties: {
+    nome: { type: "string" },
+    turno: { type: "integer", minimum: 1 },
+    citacao_vendedor: { type: "string" }
+  }
+};
+
 export const reportJsonSchema = {
   name: "manager_report_payload",
   strict: true,
@@ -48,7 +70,10 @@ export const reportJsonSchema = {
       Cocriacao: { type: "string" },
       Engajamento: { type: "string" },
       Resumo: { type: "string" },
-      Recomendacoes: { type: "string" },
+      Recomendacoes: {
+        type: "array",
+        items: recommendationSchema
+      },
       Resultado: {
         type: "string",
         enum: REPORT_RESULTS
@@ -57,11 +82,11 @@ export const reportJsonSchema = {
       Compromissos_obtidos: { type: "string" },
       Beneficios_ocultos_descobertos: {
         type: "array",
-        items: { type: "string" }
+        items: discoverySchema
       },
       Objecoes_profundas_descobertas: {
         type: "array",
-        items: { type: "string" }
+        items: discoverySchema
       },
       Violacoes_registradas: { type: "string" }
     }

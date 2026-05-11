@@ -1587,6 +1587,60 @@ button:disabled {
   font-weight: 600;
 }
 
+.feedback-screen .fb-recommendation-list .fb-rec-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feedback-screen .fb-recommendation-list strong {
+  color: var(--text-strong);
+}
+
+.feedback-screen .fb-recommendation-list p {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.feedback-screen .fb-rec-priority {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 999px;
+}
+
+.feedback-screen .fb-recommendation-list li.is-priority::marker {
+  color: #f5b042;
+}
+
+.feedback-screen .fb-discovery-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.feedback-screen .fb-discovery-meta span:first-child {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.feedback-screen .fb-discovery > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .spin {
   animation: spin 1s linear infinite;
 }

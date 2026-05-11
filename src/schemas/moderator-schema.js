@@ -15,13 +15,15 @@ export const MODERATOR_ACTIONS = [
   "encerrar_sessao"
 ];
 
+export const MODERATOR_CONFIDENCES = ["alta", "media", "baixa"];
+
 export const moderatorJsonSchema = {
   name: "moderator_payload",
   strict: true,
   schema: {
     type: "object",
     additionalProperties: false,
-    required: ["violacao", "categoria", "severidade", "acao_sugerida", "motivo"],
+    required: ["violacao", "categoria", "severidade", "acao_sugerida", "confianca", "motivo"],
     properties: {
       violacao: { type: "boolean" },
       categoria: {
@@ -35,6 +37,10 @@ export const moderatorJsonSchema = {
       acao_sugerida: {
         type: ["string", "null"],
         enum: [...MODERATOR_ACTIONS, null]
+      },
+      confianca: {
+        type: ["string", "null"],
+        enum: [...MODERATOR_CONFIDENCES, null]
       },
       motivo: { type: ["string", "null"] }
     }

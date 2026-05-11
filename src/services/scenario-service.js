@@ -76,10 +76,10 @@ function assertScenarioPayload(payload, expectedSellerName, userLevel) {
   }
 
   if (
-    !negociacao.notas_cortes?.negociacao_objecoes ||
-    !negociacao.notas_cortes?.negociacao_preco
+    typeof negociacao.notas_cortes?.negociacao_objecoes !== "number" ||
+    typeof negociacao.notas_cortes?.negociacao_preco !== "number"
   ) {
-    throw new Error("Scenario payload is missing score cutoffs.");
+    throw new Error("Scenario payload is missing numeric score cutoffs.");
   }
 
   const objectionCount = negociacao.objecoes.length;
@@ -108,7 +108,8 @@ async function generateScenarioPayload({ promptTemplate, briefing, username, use
       briefing,
       username,
       userlevel,
-      seed_diversidade: ""
+      seed_diversidade: "",
+      tracos_anteriores: "[]"
     }) + correction;
 
     const response = await callOpenAiResponses(
