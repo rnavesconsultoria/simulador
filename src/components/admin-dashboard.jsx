@@ -454,14 +454,16 @@ export function AdminDashboard() {
 
       <div className="dash-container">
         <header className="dash-header">
-          <div className="dash-brand">
-            <img src="/Logos/vertical-white.svg" alt="R Naves Consultoria" />
-            <div>
-              <h1>
-                Painel do <span className="dash-brand-accent">Gestor</span>
-              </h1>
-              <p>Visão consolidada das simulações</p>
-            </div>
+          <img
+            src="/Logos/horizontal-white.svg"
+            alt="R Naves Consultoria"
+            className="dash-header-logo"
+          />
+          <div className="dash-header-title">
+            <h1>
+              Painel do <span className="dash-brand-accent">Gestor</span>
+            </h1>
+            <p>Visão consolidada das simulações</p>
           </div>
           <button type="button" className="dash-logout" onClick={signOut}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
@@ -575,12 +577,9 @@ export function AdminDashboard() {
             <div className="dash-kpi-label">Custos OpenAI</div>
             <div className="dash-kpi-value">{formatMoney(totals?.openaiCost)}</div>
           </div>
-          <div className="dash-kpi dash-kpi-accent">
-            <div className="dash-kpi-bubble" aria-hidden="true" />
-            <div className="dash-kpi-label">PACE médio</div>
-            <div className="dash-kpi-value">
-              {Number.isFinite(Number(totals?.avgPace)) ? Number(totals.avgPace).toFixed(1) : "—"}
-            </div>
+          <div className="dash-kpi">
+            <div className="dash-kpi-label">Vendedores ativos</div>
+            <div className="dash-kpi-value">{formatNumber(totals?.activeSellers)}</div>
           </div>
         </div>
 
@@ -601,7 +600,8 @@ export function AdminDashboard() {
           </GlassCard>
 
           <div className="dash-grid-right">
-            <GlassCard delay={200}>
+            <GlassCard delay={200} className="dash-card-pace-hero">
+              <div className="dash-card-pace-bubble" aria-hidden="true" />
               <div className="dash-pace-row">
                 <PaceRadial score={totals?.avgPace} />
                 <div className="dash-pace-bars">

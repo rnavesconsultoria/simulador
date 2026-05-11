@@ -162,7 +162,7 @@ insert into public.prompt_versions (
 values
   (
     'criador',
-    '2.1.0',
+    '2.1.1',
     'gpt-5.4-2026-03-05',
     'json',
     'prompts/criador.md',
@@ -170,7 +170,7 @@ values
   ),
   (
     'cliente',
-    '2.1.0',
+    '2.1.1',
     'gpt-5.4-2026-03-05',
     'text',
     'prompts/cliente.md',
@@ -178,7 +178,7 @@ values
   ),
   (
     'moderador',
-    '2.1.0',
+    '2.1.1',
     'gpt-5.4-mini-2026-03-17',
     'json',
     'prompts/moderador.md',
@@ -186,7 +186,7 @@ values
   ),
   (
     'intencao',
-    '2.1.0',
+    '2.1.1',
     'gpt-5.4-mini-2026-03-17',
     'text',
     'prompts/intencao.md',
@@ -194,7 +194,7 @@ values
   ),
   (
     'gerente',
-    '2.1.0',
+    '2.1.1',
     'gpt-5.4-2026-03-05',
     'json',
     'prompts/gerente.md',

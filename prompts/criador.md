@@ -63,7 +63,9 @@ Se a combinação for incoerente, ajuste o DISC para alinhar com o traço, OU es
 
 ## Benefícios ocultos — definição operacional
 
-Benefícios ocultos são necessidades, ganhos ou preocupações latentes do cliente que ele NÃO mencionará espontaneamente. O vendedor só os descobre se fizer perguntas de diagnóstico relevantes (típicas da etapa Analisar do PACE). Cada um carrega um `gatilho_descoberta` (a pergunta ou linha de raciocínio que faz o benefício emergir) e um `peso` numérico entre `0.20` e `0.40` — varie esse valor entre benefícios, não use sempre o mesmo número.
+Benefícios ocultos são necessidades, ganhos ou preocupações latentes do cliente que ele NÃO mencionará espontaneamente. O vendedor só os descobre se fizer perguntas de diagnóstico relevantes (típicas da etapa Analisar do PACE). Cada um carrega um `gatilho_descoberta` (a pergunta ou linha de raciocínio que faz o benefício emergir) e um `peso` numérico entre `0.20` e `0.40`.
+
+**Varie o peso entre benefícios.** Atribua pesos diferentes para diferentes benefícios — `0.20`, `0.25`, `0.30`, `0.35`, `0.40` são todos valores válidos. NÃO use o mesmo número para todos. Benefícios mais críticos para fechar no IDEAL devem ter peso maior.
 
 ## Objeções profundas — definição operacional
 
@@ -103,7 +105,8 @@ Algumas dores o cliente declara espontaneamente (lista `objecoes`). Outras só s
         { "descricao": "string", "gatilho_revelacao": "string", "minimo_aceitavel": "string", "ideal": "string" }
       ],
       "beneficios_ocultos": [
-        { "nome": "string", "categoria": "string", "prova_esperada": "string", "gatilho_descoberta": "string", "peso": 0.30 }
+        { "nome": "string", "categoria": "string", "prova_esperada": "string", "gatilho_descoberta": "string", "peso": 0.25 },
+        { "nome": "string", "categoria": "string", "prova_esperada": "string", "gatilho_descoberta": "string", "peso": 0.35 }
       ],
       "preco": { "minimo_aceitavel": "R$ X.XXX,XX/<unidade>", "ideal": "R$ X.XXX,XX/<unidade>" },
       "notas_cortes": { "negociacao_objecoes": 0.0, "negociacao_preco": 0.0 }
@@ -137,13 +140,15 @@ Algumas dores o cliente declara espontaneamente (lista `objecoes`). Outras só s
 - 3 objeções principais; 2 a 3 objeções profundas; 3 a 4 benefícios ocultos.
 - `cenarios_validos` com **dois** cenários distintos e `regra_avaliacao` concreta que decide o cenário.
 - `nota_corte_objecao` e `nota_corte_preco` no nível devem ser `0.0` (a decisão vem dos cenários).
+- `notas_cortes`: `negociacao_objecoes = 2.5`, `negociacao_preco = 1.0`.
 
 ## Regras de qualidade
 
 - `contexto_vendedor` traz 3 a 5 frases com informações **públicas** que um vendedor real teria depois de uma pesquisa rápida no LinkedIn, no site da empresa ou em uma busca pública (nome e cargo do contato, empresa, segmento, cidade, porte, canais visíveis, contexto de mercado, tempo no cargo se plausível). NÃO escreva dores específicas, restrições orçamentárias, critérios de decisão, comitê de aprovação, frustrações com fornecedores anteriores ou hipóteses de objeções — essas informações devem ser descobertas pelo vendedor na etapa Analisar.
 - `contexto_gerente` deve ser rico e detalhado: dores explícitas e implícitas, contexto pessoal/profissional, restrições orçamentárias, perfil decisor, critérios de compra, histórico com concorrentes.
+- `historia` traz 3 a 5 frases sobre a trajetória **profissional** do personagem: progressão de carreira, tempo no cargo atual, principais responsabilidades, escopo da função e contexto que motiva o comportamento atual nas negociações. Foque em informação que justifica o jeito do personagem responder. Evite detalhes pessoais não relevantes (estado civil, hobbies, vida familiar) a menos que sejam diretamente relacionados ao perfil decisor.
 - `objecoes` devem ser específicas, plausíveis e negociáveis.
-- `beneficios_ocultos` devem ser plausíveis, descobríveis durante a conversa, e úteis para diferenciar venda mediana de venda excelente.
+- `beneficios_ocultos` devem ser plausíveis, descobríveis durante a conversa, e úteis para diferenciar venda mediana de venda excelente. Pesos variados entre eles.
 - `preco.minimo_aceitavel` e `preco.ideal` devem ser coerentes com o segmento e usar o formato canônico de preço.
 
 ## Briefing dinâmico

@@ -16,7 +16,8 @@ function emptyStats() {
       moderationFlags: 0,
       tokensUsed: 0,
       openaiCost: 0,
-      avgPace: null
+      avgPace: null,
+      activeSellers: 0
     },
     paceAverages: { P: null, A: null, C: null, E: null },
     sellerEvolution: [],
@@ -184,6 +185,10 @@ export async function GET(request) {
       };
     });
 
+    const activeSellers = new Set(
+      sessions.map((s) => s.user_id).filter(Boolean)
+    ).size;
+
     return NextResponse.json({
       ok: true,
       totals: {
@@ -191,6 +196,7 @@ export async function GET(request) {
         moderationFlags: moderationFlags ?? 0,
         tokensUsed,
         openaiCost: Math.round(openaiCost * 1000) / 1000,
+        activeSellers,
         avgPace
       },
       paceAverages,

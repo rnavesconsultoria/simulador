@@ -2380,32 +2380,41 @@ button:disabled {
 }
 
 .dash-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 28px;
   animation: dashFadeUp 400ms both;
 }
 
-.dash-brand {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.dash-brand img {
-  height: 52px;
+.dash-header-logo {
+  justify-self: start;
+  height: 40px;
   width: auto;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
-.dash-brand h1 {
+.dash-header-title {
+  justify-self: center;
+  text-align: center;
+  max-width: 600px;
+}
+
+.dash-header-title h1 {
   margin: 0;
   font-family: "Playfair Display", Georgia, serif;
-  font-size: 22px;
+  font-size: 38px;
   font-weight: 400;
   color: #ffffff;
   letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.dash-header-title p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
 }
 
 .dash-brand-accent {
@@ -2413,10 +2422,8 @@ button:disabled {
   color: #14b8a6;
 }
 
-.dash-brand p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: #64748b;
+.dash-logout {
+  justify-self: end;
 }
 
 .dash-logout {
@@ -2666,6 +2673,54 @@ button:disabled {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   animation: dashFadeUp 500ms both cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dash-card-pace-hero {
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+  border-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-card-pace-hero .dash-pace-bar-head span,
+.dash-card-pace-hero .dash-pace-bar-head strong {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.dash-card-pace-hero .dash-pace-bar-track {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.dash-card-pace-hero .dash-pace-radial-value span {
+  color: #ffffff;
+}
+
+.dash-card-pace-hero .dash-pace-radial-value em {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.dash-card-pace-hero .dash-pace-radial svg circle:first-child {
+  stroke: rgba(255, 255, 255, 0.22);
+}
+
+.dash-card-pace-hero .dash-pace-radial svg circle:last-of-type {
+  stroke: #ffffff;
+}
+
+.dash-card-pace-hero .dash-pace-letter {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.dash-card-pace-bubble {
+  position: absolute;
+  top: -32px;
+  right: -32px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
 }
 
 .dash-card-table {
@@ -3057,6 +3112,27 @@ button:disabled {
   .dash-pace-row {
     flex-direction: column;
     align-items: stretch;
+  }
+  .dash-header {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    text-align: center;
+  }
+  .dash-header-logo {
+    grid-column: 1;
+    grid-row: 1;
+    height: 32px;
+  }
+  .dash-logout {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .dash-header-title {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .dash-header-title h1 {
+    font-size: 28px;
   }
 }
 

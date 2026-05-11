@@ -34,6 +34,48 @@ const discoverySchema = {
   }
 };
 
+const violacaoSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "turno",
+    "fase",
+    "categoria",
+    "severidade",
+    "motivo",
+    "pilar_penalizado",
+    "reducao_aplicada"
+  ],
+  properties: {
+    turno: { type: "integer", minimum: 1 },
+    fase: {
+      type: "string",
+      enum: ["preparar", "analisar", "cocriar", "engajar"]
+    },
+    categoria: {
+      type: "string",
+      enum: [
+        "linguagem_agressiva",
+        "assedio",
+        "discriminacao",
+        "ameaca",
+        "jailbreak",
+        "fuga_de_contexto"
+      ]
+    },
+    severidade: {
+      type: "string",
+      enum: ["leve", "moderada", "grave"]
+    },
+    motivo: { type: "string" },
+    pilar_penalizado: {
+      type: "string",
+      enum: ["P", "A", "C", "E"]
+    },
+    reducao_aplicada: { type: "number", minimum: 0 }
+  }
+};
+
 export const reportJsonSchema = {
   name: "manager_report_payload",
   strict: true,
@@ -57,7 +99,7 @@ export const reportJsonSchema = {
       "Compromissos_obtidos",
       "Beneficios_ocultos_descobertos",
       "Objecoes_profundas_descobertas",
-      "Violacoes_registradas"
+      "Violacoes"
     ],
     properties: {
       P: scoreSchema,
@@ -88,7 +130,10 @@ export const reportJsonSchema = {
         type: "array",
         items: discoverySchema
       },
-      Violacoes_registradas: { type: "string" }
+      Violacoes: {
+        type: "array",
+        items: violacaoSchema
+      }
     }
   }
 };
