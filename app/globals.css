@@ -1475,6 +1475,34 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.feedback-screen .fb-recommendation-list {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedback-screen .fb-recommendation-list li {
+  padding-left: 4px;
+  line-height: 1.55;
+}
+
+.feedback-screen .fb-recommendation-list li::marker {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .feedback-screen .fb-form-card {
   background: var(--fb-bg-primary);
   border: 1px solid var(--fb-border);

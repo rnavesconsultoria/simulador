@@ -272,6 +272,14 @@ export function SimulatorApp() {
         ? "completed"
         : "in_simulation";
 
+  const isEndingSession =
+    state.activeRequest === "generate-report" || Boolean(state.report);
+  const screenPhase = !isEndingSession
+    ? "simulation"
+    : !state.feedbackSaved
+      ? "feedback_form"
+      : "report_view";
+
   // Welcome messages: seed the chat once after hydration based on auth state
   useEffect(() => {
     if (!hydrated || state.welcomeShown) return;
@@ -802,7 +810,7 @@ export function SimulatorApp() {
         </button>
       ) : null}
 
-      {!state.report ? (
+      {screenPhase === "simulation" ? (
         <div className={`simulation-stage${state.scenario ? "" : " no-aside"}`}>
           <div className="simulation-chat">
             {state.scenario ? (
@@ -1065,6 +1073,90 @@ export function SimulatorApp() {
             </>
           ) : null}
         </div>
+      ) : screenPhase === "feedback_form" ? (
+        <main className="feedback-screen">
+          {state.bannerError ? (
+            <div className="fb-error-banner" role="alert">
+              <span>{state.bannerError}</span>
+              <button type="button" className="fb-btn fb-btn-ghost" onClick={clearError}>
+                Fechar
+              </button>
+            </div>
+          ) : null}
+
+          <div className="fb-header-card">
+            <div className="fb-eyebrow-line" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <rect x="9" y="3" width="6" height="4" rx="1" />
+                <path d="m9 14 2 2 4-4" />
+              </svg>
+              Antes do relatório
+            </div>
+            <h1 className="fb-h1">Sua avaliação sobre a simulação</h1>
+            <p className="fb-subtitle">
+              Enquanto o gerente prepara o relatório, conta pra gente como foi a experiência.
+            </p>
+            <div className="fb-baseline" style={{ marginTop: 12 }}>
+              {state.report ? (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                  Relatório pronto — salve o feedback para visualizar.
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="spin">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Gerando o relatório do gerente em paralelo…
+                </>
+              )}
+            </div>
+          </div>
+
+          <section className="fb-section">
+            <h2 className="fb-h2">Como foi essa simulação para você?</h2>
+            <form className="fb-form-card" onSubmit={handleFeedbackSubmit}>
+              <div className="fb-rating-grid">
+                {FEEDBACK_FIELDS.map((field) => (
+                  <RatingInput
+                    key={field.name}
+                    name={field.name}
+                    label={field.label}
+                    value={feedbackScores[field.name]}
+                    disabled={isBusy("send-feedback")}
+                    onChange={(score) =>
+                      setFeedbackScores((current) => ({ ...current, [field.name]: score }))
+                    }
+                  />
+                ))}
+              </div>
+              <label className="fb-field">
+                <span>Comentário (opcional)</span>
+                <textarea
+                  name="userFeedback"
+                  rows={3}
+                  maxLength={4000}
+                  placeholder="Como foi usar o simulador?"
+                  value={feedbackComment}
+                  onChange={(event) => setFeedbackComment(event.target.value)}
+                  disabled={isBusy("send-feedback")}
+                />
+              </label>
+              <button
+                type="submit"
+                className="fb-btn fb-btn-primary"
+                disabled={isBusy("send-feedback") || !feedbackIsValid()}
+                aria-busy={isBusy("send-feedback")}
+              >
+                {isBusy("send-feedback") ? "Salvando…" : "Salvar e ver relatório"}
+              </button>
+            </form>
+          </section>
+        </main>
       ) : (
         <main className="feedback-screen">
           {state.bannerError ? (
@@ -1153,12 +1245,12 @@ export function SimulatorApp() {
             <div className="fb-radar-wrap">
               <svg viewBox="0 0 320 280" width="320" height="280" role="img" aria-label="Radar PACE">
                 <g transform="translate(160, 140)">
-                  <polygon points="0,-100 100,0 0,100 -100,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-                  <polygon points="0,-75 75,0 0,75 -75,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-                  <polygon points="0,-50 50,0 0,50 -50,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-                  <polygon points="0,-25 25,0 0,25 -25,0" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-                  <line x1="0" y1="-100" x2="0" y2="100" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
-                  <line x1="-100" y1="0" x2="100" y2="0" stroke="rgba(0,0,0,0.1)" strokeWidth="0.5" />
+                  <polygon points="0,-100 100,0 0,100 -100,0" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" />
+                  <polygon points="0,-75 75,0 0,75 -75,0" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.6" />
+                  <polygon points="0,-50 50,0 0,50 -50,0" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.6" />
+                  <polygon points="0,-25 25,0 0,25 -25,0" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.6" />
+                  <line x1="0" y1="-100" x2="0" y2="100" stroke="rgba(255,255,255,0.08)" strokeWidth="0.6" />
+                  <line x1="-100" y1="0" x2="100" y2="0" stroke="rgba(255,255,255,0.08)" strokeWidth="0.6" />
                 </g>
                 <g transform="translate(160, 140)">
                   {(() => {
@@ -1169,26 +1261,26 @@ export function SimulatorApp() {
                     const points = `0,${-P * 10} ${A * 10},0 0,${C * 10} ${-E * 10},0`;
                     return (
                       <>
-                        <polygon points={points} fill="#185fa5" fillOpacity="0.15" stroke="#185fa5" strokeWidth="1.5" />
-                        <circle cx="0" cy={-P * 10} r="3.5" fill="#185fa5" />
-                        <circle cx={A * 10} cy="0" r="3.5" fill="#185fa5" />
-                        <circle cx="0" cy={C * 10} r="3.5" fill="#185fa5" />
-                        <circle cx={-E * 10} cy="0" r="3.5" fill="#185fa5" />
+                        <polygon points={points} fill="#14b8a6" fillOpacity="0.22" stroke="#14b8a6" strokeWidth="1.6" />
+                        <circle cx="0" cy={-P * 10} r="3.6" fill="#14b8a6" />
+                        <circle cx={A * 10} cy="0" r="3.6" fill="#14b8a6" />
+                        <circle cx="0" cy={C * 10} r="3.6" fill="#14b8a6" />
+                        <circle cx={-E * 10} cy="0" r="3.6" fill="#14b8a6" />
                       </>
                     );
                   })()}
                 </g>
                 <g>
-                  <text x="160" y="25" textAnchor="middle" fontSize="13" fontWeight="500" fill="#111827">
+                  <text x="160" y="25" textAnchor="middle" fontSize="13" fontWeight="600" fill="#e2e8f0">
                     P · {Number(state.report.questions_score ?? 0).toFixed(1)}
                   </text>
-                  <text x="280" y="144" textAnchor="start" fontSize="13" fontWeight="500" fill="#111827">
+                  <text x="280" y="144" textAnchor="start" fontSize="13" fontWeight="600" fill="#e2e8f0">
                     A · {Number(state.report.analysis_score ?? 0).toFixed(1)}
                   </text>
-                  <text x="160" y="260" textAnchor="middle" fontSize="13" fontWeight="500" fill="#111827">
+                  <text x="160" y="260" textAnchor="middle" fontSize="13" fontWeight="600" fill="#e2e8f0">
                     C · {Number(state.report.creativity_score ?? 0).toFixed(1)}
                   </text>
-                  <text x="40" y="144" textAnchor="end" fontSize="13" fontWeight="500" fill="#111827">
+                  <text x="40" y="144" textAnchor="end" fontSize="13" fontWeight="600" fill="#e2e8f0">
                     E · {Number(state.report.engagement_score ?? 0).toFixed(1)}
                   </text>
                 </g>
@@ -1300,7 +1392,22 @@ export function SimulatorApp() {
             <section className="fb-section">
               <h2 className="fb-h2">Próximas ações</h2>
               <div className="fb-editorial-card">
-                <p>{state.report.report_json?.Recomendacoes ?? state.report.report_summary}</p>
+                {(() => {
+                  const raw = (state.report.report_json?.Recomendacoes ?? state.report.report_summary ?? "").trim();
+                  if (!raw) return null;
+                  const parts = raw
+                    .split(/(?<=[.!?])\s+(?=\d+[.)]\s)/)
+                    .map((s) => s.trim())
+                    .filter(Boolean);
+                  if (parts.length <= 1) return <p>{raw}</p>;
+                  return (
+                    <ol className="fb-recommendation-list">
+                      {parts.map((item, i) => (
+                        <li key={i}>{item.replace(/^\d+[.)]\s*/, "")}</li>
+                      ))}
+                    </ol>
+                  );
+                })()}
               </div>
             </section>
           ) : null}
