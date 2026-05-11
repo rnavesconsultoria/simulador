@@ -226,6 +226,7 @@ Algumas dores o cliente declara espontaneamente (lista `objecoes`). Outras só s
 <tracos_anteriores>
 {{tracos_anteriores}}
 </tracos_anteriores>
+
 ```
 
 ## 2. Cliente
@@ -334,6 +335,7 @@ Você é um cliente fictício em uma simulação de negociação B2B para treina
 <vendedor>
 {{input_vendedor}}
 </vendedor>
+
 ```
 
 ## 3. Moderador
@@ -456,6 +458,7 @@ Quando NÃO houver:
 <vendedor>
 {{input_vendedor}}
 </vendedor>
+
 ```
 
 ## 4. Intenção
@@ -538,6 +541,7 @@ O campo `confianca` deve SEMPRE ser preenchido.
 <cliente>
 {{resposta_cliente}}
 </cliente>
+
 ```
 
 ## 5. Gerente
@@ -704,4 +708,6 @@ Respeitar esses limites é obrigatório — o frontend trunca silenciosamente o 
 <violacoes>
 {{violacoes_moderador}}
 </violacoes>
+
 ```
+
