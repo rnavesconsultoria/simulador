@@ -845,7 +845,7 @@ export function SimulatorApp() {
 
             <div className="welcome-hero">
               <img
-                src="/Logos/vertical-black.png?v=2"
+                src="/Logos/Vertical branco.png?v=3"
                 alt="R Naves Consultoria"
                 className="welcome-hero-logo-vertical"
               />
@@ -1475,4 +1475,3 @@ export function SimulatorApp() {
     </div>
   );
 }
-
