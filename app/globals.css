@@ -2470,14 +2470,20 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
-  padding: 14px 20px;
+  flex-wrap: nowrap;
+  padding: 12px 16px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  overflow-x: auto;
+  scrollbar-width: thin;
   animation: dashFadeUp 400ms both;
+}
+
+.dash-filterbar > * {
+  flex-shrink: 0;
 }
 
 .dash-filterbar-label {
@@ -2499,16 +2505,24 @@ button:disabled {
 
 .dash-filterbar input,
 .dash-filterbar select {
-  padding: 8px 12px;
+  padding: 7px 10px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
   color: #e2e8f0;
-  font-size: 13px;
-  min-width: 130px;
+  font-size: 12.5px;
+  min-width: 0;
   outline: none;
   cursor: pointer;
   transition: border-color 200ms ease;
+}
+
+.dash-filterbar input[type="date"] {
+  width: 130px;
+}
+
+.dash-filterbar select {
+  width: 140px;
 }
 
 .dash-filterbar select option {
@@ -2531,7 +2545,7 @@ button:disabled {
 }
 
 .dash-filterbar-apply {
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 8px;
   border: none;
   background: linear-gradient(135deg, #14b8a6, #0d9488);
@@ -2541,13 +2555,14 @@ button:disabled {
   letter-spacing: 0.02em;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(20, 184, 166, 0.25);
+  white-space: nowrap;
 }
 
 .dash-filterbar-ghost {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: transparent;
@@ -2556,6 +2571,7 @@ button:disabled {
   font-weight: 500;
   cursor: pointer;
   transition: color 180ms ease, border-color 180ms ease;
+  white-space: nowrap;
 }
 
 .dash-filterbar-ghost:hover:not(:disabled) {
