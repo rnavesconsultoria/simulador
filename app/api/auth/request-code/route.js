@@ -32,6 +32,13 @@ export async function POST(request) {
       });
     }
 
+    // Optional next path: where the magic-link should redirect after sign-in.
+    // Whitelisted to internal absolute paths so it can't be used for open redirects.
+    let nextPath = null;
+    if (typeof body.next === "string" && /^\/[A-Za-z0-9_\-./]*$/.test(body.next)) {
+      nextPath = body.next;
+    }
+
     const ip = getRequestIp(request);
     const ipLimit = await rateLimit({
       key: `request-code:ip:${ip}`,
@@ -52,7 +59,7 @@ export async function POST(request) {
       });
     }
 
-    const result = await requestAccessCode(email);
+    const result = await requestAccessCode(email, { nextPath });
 
     const allowPreview = !env.isProduction || env.showDevelopmentCodePreview;
     const genericExpiresAt = new Date(Date.now() + env.authCodeTtlMinutes * 60 * 1000).toISOString();

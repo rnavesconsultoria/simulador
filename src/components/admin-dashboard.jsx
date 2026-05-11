@@ -181,17 +181,21 @@ export function AdminDashboard() {
     }
     setToken("");
     if (typeof window !== "undefined") {
-      window.location.href = "/";
+      window.location.href = "/admin/login";
     }
   }
 
   if (!token) {
+    if (typeof window !== "undefined") {
+      window.location.replace("/admin/login");
+      return null;
+    }
     return (
       <div className="admin-shell">
         <div className="admin-empty">
           <h1>Acesso restrito</h1>
           <p>
-            É necessário estar autenticado como admin. <a href="/">Entrar</a>.
+            É necessário estar autenticado como admin. <a href="/admin/login">Entrar</a>.
           </p>
         </div>
       </div>

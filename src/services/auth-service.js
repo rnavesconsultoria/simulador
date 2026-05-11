@@ -47,7 +47,7 @@ export async function findUserById(userId) {
   return data;
 }
 
-export async function requestAccessCode(email) {
+export async function requestAccessCode(email, { nextPath } = {}) {
   const user = await findUserByEmail(email);
   if (!user || !user.is_active) {
     return {
@@ -86,7 +86,9 @@ export async function requestAccessCode(email) {
   // Fire-and-forget e-mail dispatch via Resend. We don't block the API on this:
   // the dev preview pill and the manual code entry still work if the e-mail
   // service is unavailable. Errors are logged but never raised.
-  const magicUrl = `${env.appBaseUrl.replace(/\/$/, "")}/auth/verify?email=${encodeURIComponent(user.email)}&code=${encodeURIComponent(code)}`;
+  const baseUrl = env.appBaseUrl.replace(/\/$/, "");
+  const nextSegment = nextPath ? `&next=${encodeURIComponent(nextPath)}` : "";
+  const magicUrl = `${baseUrl}/auth/verify?email=${encodeURIComponent(user.email)}&code=${encodeURIComponent(code)}${nextSegment}`;
   sendMagicLinkEmail({ to: user.email, name: user.name, code, magicUrl })
     .then((result) => {
       if (!result.ok && result.reason !== "missing_api_key") {
