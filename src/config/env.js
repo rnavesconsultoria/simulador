@@ -44,16 +44,16 @@ export const env = {
     return readEnv("OPENAI_MODEL_CRIADOR", { fallback: "gpt-5.4-2026-03-05" });
   },
   get openAiModelCliente() {
-    return readEnv("OPENAI_MODEL_CLIENTE", { fallback: "gpt-4o" });
+    return readEnv("OPENAI_MODEL_CLIENTE", { fallback: "gpt-5.4-2026-03-05" });
   },
   get openAiModelModerador() {
-    return readEnv("OPENAI_MODEL_MODERADOR", { fallback: "gpt-4.1-mini" });
+    return readEnv("OPENAI_MODEL_MODERADOR", { fallback: "gpt-5.4-mini-2026-03-17" });
   },
   get openAiModelIntencao() {
-    return readEnv("OPENAI_MODEL_INTENCAO", { fallback: "gpt-4.1-mini" });
+    return readEnv("OPENAI_MODEL_INTENCAO", { fallback: "gpt-5.4-mini-2026-03-17" });
   },
   get openAiModelGerente() {
-    return readEnv("OPENAI_MODEL_GERENTE", { fallback: "gpt-5-mini" });
+    return readEnv("OPENAI_MODEL_GERENTE", { fallback: "gpt-5.4-2026-03-05" });
   },
   get appSessionSecret() {
     return readEnv("APP_SESSION_SECRET", { required: true });
