@@ -242,11 +242,24 @@ export function SimulatorApp() {
     : "Aguardando autenticação";
 
   const persona = state.scenario?.dynamic_block_json?.personagem;
+  const personaInitials = (persona?.nome ?? "")
+    .split(/\s+/)
+    .filter((w) => w.length > 2)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("") || "CL";
   const simulationStatus = persona
     ? `${persona.nome} — ${persona.personalidade_nivel?.nivel ?? ""}`
     : state.sessionId
       ? "Simulação ativa"
       : "Nenhuma simulação ativa";
+
+  const inSimulation = Boolean(state.user && state.scenario && !state.report);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!inSimulation) setDrawerOpen(false);
+  }, [inSimulation]);
 
   const progress = useMemo(
     () => [
@@ -539,53 +552,260 @@ export function SimulatorApp() {
     );
   }
 
+  const contextContent = persona ? (
+    <>
+      <div className="context-card">
+        <div className="context-card-head">
+          <div className="context-avatar" aria-hidden="true">{personaInitials}</div>
+          <div>
+            <div className="context-name">{persona.nome}</div>
+            <div className="context-subtitle">
+              {persona.cargo}
+              {persona.empresa ? ` · ${persona.empresa}` : ""}
+            </div>
+          </div>
+        </div>
+        <div className="context-details">
+          {persona.cidade ? (
+            <div className="context-detail">
+              <span className="label">Cidade</span>
+              <span className="value">{persona.cidade}</span>
+            </div>
+          ) : null}
+          {persona.personalidade_nivel?.nivel ? (
+            <div className="context-detail">
+              <span className="label">Nível</span>
+              <span className="value">{persona.personalidade_nivel.nivel}</span>
+            </div>
+          ) : null}
+          {persona.personalidade_pace ? (
+            <div className="context-detail">
+              <span className="label">Perfil PACE</span>
+              <span className="value">{persona.personalidade_pace}</span>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="context-card">
+        <p className="context-eyebrow">Cenário</p>
+        <p className="context-body">
+          {state.scenario?.seller_context || state.scenario?.manager_context}
+        </p>
+      </div>
+
+      <div className="context-tip">
+        <p className="context-eyebrow">Dica</p>
+        <p className="context-body">
+          Faça perguntas abertas para diagnosticar necessidades antes de apresentar soluções.
+        </p>
+      </div>
+    </>
+  ) : null;
+
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark" aria-hidden="true">RN</div>
-          <div>
-            <p className="eyebrow">RNaves Consultoria</p>
-            <h1>Simulador</h1>
+      <nav className="app-navbar">
+        <div className="navbar-left">
+          <div className="brand">
+            <div className="brand-mark" aria-hidden="true">RN</div>
+            <span className="brand-name">R Naves Consultoria</span>
           </div>
         </div>
-
-        <div className="status-card">
-          <p className="eyebrow">Ambiente</p>
-          <p className="status-text">{state.healthOk ? "API online" : "API indisponível"}</p>
+        <div className="navbar-status">
+          <span className={`health-dot${state.healthOk ? " ok" : ""}`} aria-hidden="true" />
+          <span>{state.healthOk ? "API online" : "API indisponível"}</span>
+          {state.user ? (
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => handleLogout({ confirm: true })}
+            >
+              Sair
+            </button>
+          ) : null}
         </div>
+      </nav>
 
-        <div className="status-card">
-          <p className="eyebrow">Sessão</p>
-          <p className="status-text">{sessionStatus}</p>
-        </div>
+      {inSimulation ? (
+        <div className="simulation-stage">
+          <div className="simulation-chat">
+            <div className="mobile-subbar">
+              <button type="button" onClick={() => setDrawerOpen(true)}>
+                Ver cliente
+              </button>
+              <button
+                type="button"
+                className="accent"
+                onClick={handleGenerateReport}
+                disabled={isBusy("generate-report")}
+              >
+                {isBusy("generate-report") ? "Gerando…" : "Encerrar"}
+              </button>
+            </div>
 
-        <div className="status-card">
-          <p className="eyebrow">Simulação</p>
-          <p className="status-text">{simulationStatus}</p>
-        </div>
+            {state.bannerError ? (
+              <div className="error-banner" role="alert" style={{ margin: "14px 28px 0" }}>
+                <span>{state.bannerError}</span>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  onClick={clearError}
+                  aria-label="Fechar aviso"
+                >
+                  Fechar
+                </button>
+              </div>
+            ) : null}
 
-        <div className="status-card">
-          <p className="eyebrow">Andamento</p>
-          <div className="stage-list">
-            {progress.map((stage) => (
-              <StagePill key={stage.label} label={stage.label} ready={stage.ready} />
-            ))}
+            <div className="simulation-header">
+              <div className="session-meta">
+                {persona?.nome ? `Conversando com ${persona.nome}` : "Conversa em andamento"}
+                {state.shouldEnd ? (
+                  <span className="intent-chip" style={{ marginLeft: 10 }}>
+                    Encerramento sugerido
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div
+              className="chat-log"
+              ref={chatLogRef}
+              aria-live="polite"
+              aria-busy={isBusy("send-message")}
+            >
+              {state.chatItems.map((item, index) => (
+                <article className={`message ${item.kind}`} key={`${item.kind}-${index}`}>
+                  {item.kind !== "system" ? (
+                    <span className="message-label">{item.label}</span>
+                  ) : null}
+                  <div className="message-text">{item.text}</div>
+                </article>
+              ))}
+              {isBusy("send-message") ? (
+                <div className="typing-indicator" aria-label="Cliente digitando">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              ) : null}
+            </div>
+
+            <form className="composer" onSubmit={handleSendMessage}>
+              <div className="composer-wrap">
+                <textarea
+                  ref={composerRef}
+                  placeholder="Conversa..."
+                  rows={1}
+                  maxLength={4000}
+                  disabled={!state.sessionId || isBusy("send-message") || isListening}
+                  value={messageInput}
+                  onChange={(event) => setMessageInput(event.target.value)}
+                  onKeyDown={handleComposerKeyDown}
+                />
+                {dictationSupported ? (
+                  <button
+                    type="button"
+                    className={`mic-button${isListening ? " listening" : ""}`}
+                    onClick={toggleDictation}
+                    disabled={!state.sessionId || isBusy("send-message")}
+                    aria-pressed={isListening}
+                    aria-label={isListening ? "Parar ditado" : "Falar (ditado por voz)"}
+                    title={isListening ? "Parar ditado" : "Falar (ditado por voz)"}
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="9" y="3" width="6" height="12" rx="3" />
+                      <path d="M5 11a7 7 0 0 0 14 0" />
+                      <line x1="12" y1="18" x2="12" y2="22" />
+                      <line x1="8" y1="22" x2="16" y2="22" />
+                    </svg>
+                  </button>
+                ) : null}
+                <button
+                  type="submit"
+                  className="send-button"
+                  disabled={
+                    !state.sessionId ||
+                    !messageInput.trim() ||
+                    isBusy("send-message") ||
+                    isListening
+                  }
+                  aria-busy={isBusy("send-message")}
+                >
+                  {isBusy("send-message") ? "Enviando…" : "Enviar"}
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M2 7h10M8 3l4 4-4 4" />
+                  </svg>
+                </button>
+              </div>
+            </form>
           </div>
-        </div>
 
-        {state.user ? (
-          <button
-            type="button"
-            className="ghost-button sidebar-action"
-            onClick={() => handleLogout({ confirm: true })}
+          <aside className="context-panel">
+            <button
+              type="button"
+              className="context-end-button"
+              onClick={handleGenerateReport}
+              disabled={!state.sessionId || isBusy("generate-report")}
+              aria-busy={isBusy("generate-report")}
+            >
+              {isBusy("generate-report") ? "Gerando relatório…" : "Encerrar simulação"}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="8" cy="8" r="6" />
+                <path d="M8 5v3l2 1.5" />
+              </svg>
+            </button>
+            {contextContent}
+          </aside>
+
+          <div
+            className={`context-drawer-backdrop${drawerOpen ? " open" : ""}`}
+            onClick={() => setDrawerOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            className={`context-drawer${drawerOpen ? " open" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Detalhes do cliente"
           >
-            Sair
-          </button>
-        ) : null}
-      </aside>
-
-      <main className="main">
+            <div className="context-drawer-handle" aria-hidden="true" />
+            {contextContent}
+          </div>
+        </div>
+      ) : (
+        <main className="main">
         <section className="hero">
           <div>
             <p className="eyebrow">Validação do novo stack</p>
@@ -948,7 +1168,8 @@ export function SimulatorApp() {
             )}
           </section>
         </section>
-      </main>
+        </main>
+      )}
     </div>
   );
 }
