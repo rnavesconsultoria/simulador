@@ -20,7 +20,14 @@ async function loadSimulationForReport(sessionId, userId) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("simulation_sessions")
-    .select("id, session_key, status, user_id, finished_at")
+    .select(`
+      id,
+      session_key,
+      status,
+      user_id,
+      finished_at,
+      scenarios ( dynamic_block_json )
+    `)
     .eq("id", sessionId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -30,6 +37,23 @@ async function loadSimulationForReport(sessionId, userId) {
   }
 
   return data ?? null;
+}
+
+async function loadModeratorEvents(sessionId) {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("session_messages")
+    .select("id, content, moderation_reason, metadata, created_at")
+    .eq("session_id", sessionId)
+    .eq("actor", "moderator")
+    .eq("moderation_flag", true)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to load moderator events: ${error.message}`);
+  }
+
+  return data ?? [];
 }
 
 async function loadMessages(sessionId) {
@@ -65,7 +89,31 @@ export async function generateReportForSimulation({ sessionId, user }) {
   const promptVersion = await getActivePromptVersion("gerente");
   const promptTemplate = await loadPrompt("gerente");
   const threadCompleta = formatConversationHistory(messages, { actors: conversationActors });
-  const prompt = renderPrompt(promptTemplate, { thread_completa: threadCompleta });
+
+  const personagemJson = simulation.scenarios?.dynamic_block_json
+    ? JSON.stringify(simulation.scenarios.dynamic_block_json, null, 2)
+    : "";
+
+  const moderatorEvents = await loadModeratorEvents(sessionId);
+  const violacoesModerador = moderatorEvents.length
+    ? JSON.stringify(
+        moderatorEvents.map((m) => ({
+          motivo: m.moderation_reason,
+          severidade: m.metadata?.severidade ?? null,
+          categoria: m.metadata?.categoria ?? null,
+          acao_sugerida: m.metadata?.acao_sugerida ?? null,
+          em: m.created_at
+        })),
+        null,
+        2
+      )
+    : "[]";
+
+  const prompt = renderPrompt(promptTemplate, {
+    thread_completa: threadCompleta,
+    personagem_json: personagemJson,
+    violacoes_moderador: violacoesModerador
+  });
 
   const response = await callOpenAiResponses(
     {

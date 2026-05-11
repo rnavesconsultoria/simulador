@@ -5,6 +5,13 @@ const scoreSchema = {
   multipleOf: 0.5
 };
 
+export const REPORT_RESULTS = [
+  "fechou_ideal",
+  "fechou_aceitavel",
+  "nao_fechou",
+  "inconclusivo"
+];
+
 export const reportJsonSchema = {
   name: "manager_report_payload",
   strict: true,
@@ -22,7 +29,13 @@ export const reportJsonSchema = {
       "Cocriacao",
       "Engajamento",
       "Resumo",
-      "Recomendacoes"
+      "Recomendacoes",
+      "Resultado",
+      "Preco_final",
+      "Compromissos_obtidos",
+      "Beneficios_ocultos_descobertos",
+      "Objecoes_profundas_descobertas",
+      "Violacoes_registradas"
     ],
     properties: {
       P: scoreSchema,
@@ -35,7 +48,22 @@ export const reportJsonSchema = {
       Cocriacao: { type: "string" },
       Engajamento: { type: "string" },
       Resumo: { type: "string" },
-      Recomendacoes: { type: "string" }
+      Recomendacoes: { type: "string" },
+      Resultado: {
+        type: "string",
+        enum: REPORT_RESULTS
+      },
+      Preco_final: { type: "string" },
+      Compromissos_obtidos: { type: "string" },
+      Beneficios_ocultos_descobertos: {
+        type: "array",
+        items: { type: "string" }
+      },
+      Objecoes_profundas_descobertas: {
+        type: "array",
+        items: { type: "string" }
+      },
+      Violacoes_registradas: { type: "string" }
     }
   }
 };

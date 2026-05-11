@@ -11,7 +11,7 @@ import { moderatorJsonSchema } from "../schemas/moderator-schema.js";
 import { recordOpenAiUsage } from "./cost-service.js";
 import { getActivePromptVersion } from "./prompt-version-service.js";
 
-const PHASE_ORDER = ["abertura", "objecoes", "preco", "fechamento"];
+const PHASE_ORDER = ["preparar", "analisar", "cocriar", "engajar"];
 
 async function loadSimulationContext(sessionId, userId) {
   const supabase = getSupabaseAdmin();
@@ -148,13 +148,20 @@ async function runModerator(inputVendedor) {
   };
 }
 
-async function runClient({ blocoDinamico, historico, inputVendedor, faseAtual }) {
+async function runClient({
+  blocoDinamico,
+  historico,
+  inputVendedor,
+  faseAtual,
+  sinalModerador
+}) {
   const promptTemplate = await loadPrompt("cliente");
   const prompt = renderPrompt(promptTemplate, {
     bloco_dinamico: JSON.stringify(blocoDinamico, null, 2),
     historico,
     input_vendedor: inputVendedor,
-    fase_atual: faseAtual
+    fase_atual: faseAtual,
+    sinal_moderador: sinalModerador ?? ""
   });
 
   const response = await callOpenAiResponses(
@@ -244,17 +251,35 @@ export async function processVendorMessage({ sessionId, user, message }) {
     moderationReason: moderator.payload.motivo ?? null,
     metadata: {
       response_id: moderator.responseId,
-      prompt_version_id: moderatorPromptVersion?.id ?? null
+      prompt_version_id: moderatorPromptVersion?.id ?? null,
+      categoria: moderator.payload.categoria ?? null,
+      severidade: moderator.payload.severidade ?? null,
+      acao_sugerida: moderator.payload.acao_sugerida ?? null
     }
   });
 
-  if (wasModerated) {
+  const shouldForceEnd = moderator.payload.acao_sugerida === "encerrar_sessao";
+  if (wasModerated && shouldForceEnd) {
     return {
       ok: true,
       moderated: true,
       moderator: { reason: moderator.payload.motivo ?? "Conduta inadequada detectada." }
     };
   }
+
+  const sinalModerador = wasModerated
+    ? JSON.stringify(
+        {
+          violacao: moderator.payload.violacao,
+          categoria: moderator.payload.categoria,
+          severidade: moderator.payload.severidade,
+          acao_sugerida: moderator.payload.acao_sugerida,
+          motivo: moderator.payload.motivo
+        },
+        null,
+        2
+      )
+    : "";
 
   const allMessages = await loadSessionMessages(sessionId);
   const historico = formatConversationHistory(allMessages, { actors: ["vendor", "client"] });
@@ -264,7 +289,8 @@ export async function processVendorMessage({ sessionId, user, message }) {
     blocoDinamico: simulation.scenarios.dynamic_block_json,
     historico,
     inputVendedor: trimmedMessage,
-    faseAtual: simulation.current_phase ?? "abertura"
+    faseAtual: simulation.current_phase ?? "preparar",
+    sinalModerador
   });
 
   await recordOpenAiUsage({
@@ -275,7 +301,7 @@ export async function processVendorMessage({ sessionId, user, message }) {
   });
 
   const clientFala = (client.payload.fala ?? "").trim();
-  const clientPhase = client.payload.fase ?? simulation.current_phase ?? "abertura";
+  const clientPhase = client.payload.fase ?? simulation.current_phase ?? "preparar";
 
   const clientMessage = await insertMessage({
     sessionId,
@@ -316,15 +342,25 @@ export async function processVendorMessage({ sessionId, user, message }) {
     intentResult: shouldEnd ? "intention_true" : "intention_false",
     metadata: {
       response_id: intent.responseId,
-      prompt_version_id: intentPromptVersion?.id ?? null
+      prompt_version_id: intentPromptVersion?.id ?? null,
+      confianca: intent.payload.confianca ?? null
     }
   });
 
   return {
     ok: true,
-    moderated: false,
+    moderated: wasModerated,
+    moderator: wasModerated
+      ? {
+          reason: moderator.payload.motivo ?? null,
+          severidade: moderator.payload.severidade ?? null,
+          acao_sugerida: moderator.payload.acao_sugerida ?? null
+        }
+      : null,
     reply: clientMessage.content,
     phase: clientPhase,
+    phaseChanged: client.payload.fase_mudou === true,
+    intentConfidence: intent.payload.confianca ?? null,
     shouldEnd
   };
 }

@@ -9,14 +9,27 @@ const objectionSchema = {
   }
 };
 
+const deepObjectionSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["descricao", "gatilho_revelacao", "minimo_aceitavel", "ideal"],
+  properties: {
+    descricao: { type: "string" },
+    gatilho_revelacao: { type: "string" },
+    minimo_aceitavel: { type: "string" },
+    ideal: { type: "string" }
+  }
+};
+
 const hiddenBenefitSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["nome", "categoria", "prova_esperada", "peso"],
+  required: ["nome", "categoria", "prova_esperada", "gatilho_descoberta", "peso"],
   properties: {
     nome: { type: "string" },
     categoria: { type: "string" },
     prova_esperada: { type: "string" },
+    gatilho_descoberta: { type: "string" },
     peso: { type: "number" }
   }
 };
@@ -51,6 +64,7 @@ export const scenarioJsonSchema = {
           "empresa",
           "cidade",
           "personalidade_pace",
+          "traco_dominante",
           "tom_linguagem",
           "historia",
           "personalidade_nivel",
@@ -62,6 +76,7 @@ export const scenarioJsonSchema = {
           empresa: { type: "string" },
           cidade: { type: "string" },
           personalidade_pace: { type: "string" },
+          traco_dominante: { type: "string" },
           tom_linguagem: { type: "string" },
           historia: { type: "string" },
           personalidade_nivel: {
@@ -93,6 +108,7 @@ export const scenarioJsonSchema = {
             required: [
               "nome_vendedor",
               "objecoes",
+              "objecoes_profundas",
               "beneficios_ocultos",
               "preco",
               "notas_cortes"
@@ -103,6 +119,10 @@ export const scenarioJsonSchema = {
                 type: "array",
                 minItems: 1,
                 items: objectionSchema
+              },
+              objecoes_profundas: {
+                type: "array",
+                items: deepObjectionSchema
               },
               beneficios_ocultos: {
                 type: "array",

@@ -107,7 +107,8 @@ async function generateScenarioPayload({ promptTemplate, briefing, username, use
     const prompt = renderPrompt(promptTemplate, {
       briefing,
       username,
-      userlevel
+      userlevel,
+      seed_diversidade: ""
     }) + correction;
 
     const response = await callOpenAiResponses(
@@ -176,7 +177,7 @@ export async function generateScenarioForUser(user) {
       company_id: user.company_id,
       scenario_id: scenario.id,
       status: "scenario_ready",
-      current_phase: "abertura"
+      current_phase: "preparar"
     })
     .select("id, session_key, status, current_phase")
     .single();

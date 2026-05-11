@@ -5,11 +5,8 @@ function escapeBraces(input) {
 }
 
 export function renderPrompt(template, values) {
-  return template.replace(PLACEHOLDER_REGEX, (match, key) => {
-    if (!Object.prototype.hasOwnProperty.call(values, key)) {
-      return match;
-    }
-    const value = values[key];
+  return template.replace(PLACEHOLDER_REGEX, (_match, key) => {
+    const value = values?.[key];
     if (value === undefined || value === null) {
       return "";
     }
