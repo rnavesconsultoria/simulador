@@ -70,6 +70,13 @@ export const env = {
   get authRequestRateLimitPerMinute() {
     return Number(readEnv("AUTH_REQUEST_RATE_LIMIT_PER_MINUTE", { fallback: "5" }));
   },
+  get adminEmails() {
+    const raw = readEnv("ADMIN_EMAILS", { fallback: "" });
+    return (raw ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+  },
   get showDevelopmentCodePreview() {
     return readBooleanEnv("SHOW_DEVELOPMENT_CODE_PREVIEW", false);
   },
