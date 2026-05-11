@@ -274,7 +274,6 @@ const SERIES_COLORS = ["#14b8a6", "#8b5cf6", "#3b82f6", "#f59e0b", "#f43f5e", "#
 
 export function AdminDashboard() {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
-  const [draft, setDraft] = useState(INITIAL_FILTERS);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -320,22 +319,28 @@ export function AdminDashboard() {
     };
   }, [token, filters]);
 
-  const filterOptions = useMemo(() => {
-    if (!data?.simulations) return { companies: [], sellers: [] };
-    const companies = new Map();
-    const sellers = new Map();
-    for (const s of data.simulations) {
-      if (s.companyId && s.company && s.company !== "—") companies.set(s.companyId, s.company);
-      if (s.userId && s.sellerName && s.sellerName !== "—") sellers.set(s.userId, s.sellerName);
-    }
-    return {
-      companies: Array.from(companies.entries())
-        .map(([id, name]) => ({ id, name }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-      sellers: Array.from(sellers.entries())
-        .map(([id, name]) => ({ id, name }))
-        .sort((a, b) => a.name.localeCompare(b.name))
-    };
+  // Accumulate filter options over time (UNION across all fetched datasets),
+  // so switching between companies/sellers doesn't require first clearing
+  // the active filter.
+  const [filterOptions, setFilterOptions] = useState({ companies: [], sellers: [] });
+  useEffect(() => {
+    if (!data?.simulations) return;
+    setFilterOptions((prev) => {
+      const companies = new Map(prev.companies.map((c) => [c.id, c.name]));
+      const sellers = new Map(prev.sellers.map((s) => [s.id, s.name]));
+      for (const s of data.simulations) {
+        if (s.companyId && s.company && s.company !== "—") companies.set(s.companyId, s.company);
+        if (s.userId && s.sellerName && s.sellerName !== "—") sellers.set(s.userId, s.sellerName);
+      }
+      return {
+        companies: Array.from(companies.entries())
+          .map(([id, name]) => ({ id, name }))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+        sellers: Array.from(sellers.entries())
+          .map(([id, name]) => ({ id, name }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      };
+    });
   }, [data]);
 
   const chart = useMemo(() => {
@@ -354,12 +359,11 @@ export function AdminDashboard() {
     return { labels: formattedLabels, series };
   }, [data]);
 
-  function applyDraft() {
-    setFilters({ ...draft });
+  function updateFilter(key, value) {
+    setFilters((c) => ({ ...c, [key]: value }));
   }
 
   function clearAll() {
-    setDraft({ ...INITIAL_FILTERS });
     setFilters({ ...INITIAL_FILTERS });
   }
 
@@ -489,23 +493,23 @@ export function AdminDashboard() {
 
           <input
             type="date"
-            value={draft.from}
-            onChange={(e) => setDraft((d) => ({ ...d, from: e.target.value }))}
+            value={filters.from}
+            onChange={(e) => updateFilter("from", e.target.value)}
             aria-label="Data inicial"
           />
           <span className="dash-filterbar-sep">até</span>
           <input
             type="date"
-            value={draft.to}
-            onChange={(e) => setDraft((d) => ({ ...d, to: e.target.value }))}
+            value={filters.to}
+            onChange={(e) => updateFilter("to", e.target.value)}
             aria-label="Data final"
           />
 
           <div className="dash-filterbar-divider" aria-hidden="true" />
 
           <select
-            value={draft.company_id}
-            onChange={(e) => setDraft((d) => ({ ...d, company_id: e.target.value }))}
+            value={filters.company_id}
+            onChange={(e) => updateFilter("company_id", e.target.value)}
             aria-label="Empresa"
           >
             <option value="">Todas empresas</option>
@@ -515,8 +519,8 @@ export function AdminDashboard() {
           </select>
 
           <select
-            value={draft.user_id}
-            onChange={(e) => setDraft((d) => ({ ...d, user_id: e.target.value }))}
+            value={filters.user_id}
+            onChange={(e) => updateFilter("user_id", e.target.value)}
             aria-label="Vendedor"
           >
             <option value="">Todos vendedores</option>
@@ -526,8 +530,8 @@ export function AdminDashboard() {
           </select>
 
           <select
-            value={draft.level}
-            onChange={(e) => setDraft((d) => ({ ...d, level: e.target.value }))}
+            value={filters.level}
+            onChange={(e) => updateFilter("level", e.target.value)}
             aria-label="Senioridade"
           >
             <option value="">Todas senioridades</option>
@@ -538,9 +542,6 @@ export function AdminDashboard() {
 
           <div className="dash-filterbar-spacer" />
 
-          <button type="button" className="dash-filterbar-apply" onClick={applyDraft}>
-            Aplicar
-          </button>
           <button type="button" className="dash-filterbar-ghost" onClick={clearAll}>
             Limpar
           </button>
