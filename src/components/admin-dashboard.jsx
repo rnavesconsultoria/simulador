@@ -72,10 +72,12 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [token, setToken] = useState("");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const stored = loadStoredSession();
     if (stored?.sessionToken) setToken(stored.sessionToken);
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
@@ -183,6 +185,17 @@ export function AdminDashboard() {
     if (typeof window !== "undefined") {
       window.location.href = "/admin/login";
     }
+  }
+
+  // Don't decide auth state until we've checked localStorage on the client.
+  if (!hydrated) {
+    return (
+      <div className="admin-shell">
+        <div className="admin-empty">
+          <p>Carregando…</p>
+        </div>
+      </div>
+    );
   }
 
   if (!token) {
