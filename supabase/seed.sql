@@ -163,7 +163,7 @@ values
   (
     'criador',
     '1.0.0',
-    'gpt-4o',
+    'gpt-5.4-2026-03-05',
     'json',
     'prompts/criador.md',
     true
@@ -171,7 +171,7 @@ values
   (
     'cliente',
     '1.0.0',
-    'gpt-4o',
+    'gpt-5.4-2026-03-05',
     'text',
     'prompts/cliente.md',
     true
@@ -179,7 +179,7 @@ values
   (
     'moderador',
     '1.0.0',
-    'gpt-4.1-mini',
+    'gpt-5.4-mini-2026-03-17',
     'json',
     'prompts/moderador.md',
     true
@@ -187,7 +187,7 @@ values
   (
     'intencao',
     '1.0.0',
-    'gpt-4.1-mini',
+    'gpt-5.4-mini-2026-03-17',
     'text',
     'prompts/intencao.md',
     true
@@ -195,7 +195,7 @@ values
   (
     'gerente',
     '1.0.0',
-    'gpt-5-mini',
+    'gpt-5.4-2026-03-05',
     'json',
     'prompts/gerente.md',
     true
