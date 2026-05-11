@@ -2431,15 +2431,15 @@ button:disabled {
   justify-self: start;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 8px 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  justify-content: flex-start;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .dash-header-logo img {
-  height: 44px;
+  height: 46px;
   width: auto;
   display: block;
 }

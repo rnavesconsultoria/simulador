@@ -455,7 +455,7 @@ export function AdminDashboard() {
       <div className="dash-container">
         <header className="dash-header">
           <span className="dash-header-logo">
-            <img src="/Logos/Vertical branco.png?v=6" alt="R Naves Consultoria" />
+            <img src="/Logos/horizontal-white.svg?v=7" alt="R Naves Consultoria" />
           </span>
           <div className="dash-header-title">
             <h1>
