@@ -533,14 +533,6 @@ export function SimulatorApp() {
       }));
 
       pushChatItem({ kind: "assistant", label: "Cliente", text: payload.reply });
-
-      if (payload.shouldEnd) {
-        pushChatItem({
-          kind: "system",
-          label: "",
-          text: "A intenção detectou possível encerramento. Você pode gerar o relatório."
-        });
-      }
     } catch (error) {
       showError(error);
     } finally {
@@ -676,6 +668,10 @@ export function SimulatorApp() {
     } catch {
       /* navegador sem clipboard API */
     }
+  }
+
+  function dismissIntentPrompt() {
+    setState((c) => ({ ...c, shouldEnd: false }));
   }
 
   function handleNewSimulation() {
@@ -886,6 +882,32 @@ export function SimulatorApp() {
                   <span />
                   <span />
                   <span />
+                </div>
+              ) : null}
+              {state.shouldEnd && !state.report && !isBusy("send-message") ? (
+                <div className="intent-confirm" role="dialog" aria-label="Encerrar simulação?">
+                  <p className="intent-confirm-text">
+                    Parece que a conversa pode estar terminando. Deseja encerrar a simulação e ver o relatório?
+                  </p>
+                  <div className="intent-confirm-actions">
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={handleGenerateReport}
+                      disabled={isBusy("generate-report")}
+                      aria-busy={isBusy("generate-report")}
+                    >
+                      {isBusy("generate-report") ? "Gerando…" : "Encerrar"}
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={dismissIntentPrompt}
+                      disabled={isBusy("generate-report")}
+                    >
+                      Continuar
+                    </button>
+                  </div>
                 </div>
               ) : null}
             </div>
