@@ -110,7 +110,49 @@ select {
   text-align: center;
 }
 
-/* ─── Top navbar ─── */
+/* ─── Floating logout (replaces full-width navbar) ─── */
+.floating-logout {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.floating-logout:hover {
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.floating-logout svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .floating-logout span {
+    display: none;
+  }
+  .floating-logout {
+    padding: 8px;
+    border-radius: 50%;
+  }
+}
+
+/* ─── Top navbar (legacy, no longer rendered) ─── */
 .app-navbar {
   display: flex;
   align-items: center;
@@ -458,7 +500,7 @@ button:disabled {
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 0;
-  min-height: calc(100vh - 56px);
+  min-height: 100vh;
   background: var(--bg);
 }
 
@@ -1194,18 +1236,19 @@ button:disabled {
   }
 }
 
-/* ─── Feedback screen (light theme) ─── */
+/* ─── Feedback screen (dark theme, matches simulation UX) ─── */
 .feedback-screen {
-  --fb-bg-page: #f9fafb;
-  --fb-bg-primary: #ffffff;
-  --fb-bg-secondary: #f3f4f6;
-  --fb-bg-info: #dbeafe;
-  --fb-text-primary: #111827;
-  --fb-text-secondary: #6b7280;
-  --fb-text-tertiary: #9ca3af;
-  --fb-text-info: #185fa5;
-  --fb-text-success: #0f6e56;
-  --fb-border: rgba(0, 0, 0, 0.08);
+  --fb-bg-page: var(--bg);
+  --fb-bg-primary: var(--surface);
+  --fb-bg-secondary: var(--surface-strong);
+  --fb-bg-info: var(--accent-soft);
+  --fb-text-primary: var(--text);
+  --fb-text-secondary: var(--muted);
+  --fb-text-tertiary: var(--muted-soft);
+  --fb-text-info: var(--accent);
+  --fb-text-success: #34d399;
+  --fb-text-warning: #f5b042;
+  --fb-border: var(--line);
   background: var(--fb-bg-page);
   color: var(--fb-text-primary);
   max-width: 760px;
@@ -1263,9 +1306,12 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--fb-text-secondary);
-  font-size: 13px;
-  margin-bottom: 6px;
+  color: var(--fb-text-info);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
 }
 
 .feedback-screen .fb-header-card {
@@ -1273,7 +1319,9 @@ button:disabled {
   border: 1px solid var(--fb-border);
   border-radius: 14px;
   padding: 22px 26px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .feedback-screen .fb-subtitle {
@@ -1430,12 +1478,14 @@ button:disabled {
   padding: 18px 20px;
   display: grid;
   gap: 14px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .feedback-screen .fb-success-card {
-  background: #e1f5ee;
-  border: 1px solid rgba(15, 110, 86, 0.22);
-  color: var(--fb-text-success);
+  background: var(--accent-soft);
+  border: 1px solid rgba(20, 184, 166, 0.35);
+  color: var(--accent);
   padding: 14px 18px;
   border-radius: 10px;
   font-size: 14px;
@@ -1448,9 +1498,9 @@ button:disabled {
   gap: 12px;
   padding: 12px 16px;
   border-radius: 10px;
-  border: 1px solid #fecaca;
-  background: #fee2e2;
-  color: #b91c1c;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: var(--danger-soft);
+  color: var(--danger);
   margin-bottom: 18px;
   font-size: 14px;
 }

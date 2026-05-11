@@ -775,28 +775,32 @@ export function SimulatorApp() {
 
   return (
     <div className="shell">
-      <nav className="app-navbar">
-        <div className="navbar-left">
-          <a href="/" className="brand" aria-label="R Naves Consultoria">
-            <img
-              src="/Logos/horizontal-white.svg?v=2"
-              alt="R Naves Consultoria"
-              className="brand-logo"
-            />
-          </a>
-        </div>
-        <div className="navbar-status">
-          {state.user ? (
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={() => handleLogout({ confirm: true })}
-            >
-              Sair
-            </button>
-          ) : null}
-        </div>
-      </nav>
+      {state.user ? (
+        <button
+          type="button"
+          className="floating-logout"
+          onClick={() => handleLogout({ confirm: true })}
+          aria-label="Sair da sessão"
+          title="Sair"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span>Sair</span>
+        </button>
+      ) : null}
 
       {!state.report ? (
         <div className={`simulation-stage${state.scenario ? "" : " no-aside"}`}>
