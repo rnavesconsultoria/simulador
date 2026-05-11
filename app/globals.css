@@ -513,6 +513,45 @@ select {
 }
 
 /* ─── Floating logout (replaces full-width navbar) ─── */
+.floating-end-session {
+  position: fixed;
+  top: 16px;
+  right: 96px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(20, 184, 166, 0.4);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+}
+
+.floating-end-session:hover:not(:disabled) {
+  background: rgba(20, 184, 166, 0.22);
+  box-shadow: 0 6px 18px rgba(20, 184, 166, 0.3);
+  transform: translateY(-1px);
+}
+
+.floating-end-session:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .floating-end-session {
+    display: none;
+  }
+}
+
 .floating-logout {
   position: fixed;
   top: 16px;
@@ -900,7 +939,7 @@ button:disabled {
 /* ─── Immersive simulation stage ─── */
 .simulation-stage {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr;
   gap: 0;
   min-height: 100vh;
   background: var(--bg);
@@ -1719,7 +1758,7 @@ button:disabled {
 .mobile-subbar {
   display: none;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 8px 16px;
   border-bottom: 1px solid var(--line);
 }

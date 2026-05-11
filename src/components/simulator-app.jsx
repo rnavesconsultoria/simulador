@@ -794,16 +794,13 @@ export function SimulatorApp() {
           <div className="simulation-chat">
             {state.scenario ? (
               <div className="mobile-subbar">
-                <button type="button" onClick={() => setDrawerOpen(true)}>
-                  Ver cliente
-                </button>
                 <button
                   type="button"
                   className="accent"
                   onClick={handleGenerateReport}
                   disabled={isBusy("generate-report")}
                 >
-                  {isBusy("generate-report") ? "Gerando…" : "Encerrar"}
+                  {isBusy("generate-report") ? "Gerando…" : "Encerrar simulação"}
                 </button>
               </div>
             ) : null}
@@ -1052,51 +1049,29 @@ export function SimulatorApp() {
           </div>
 
           {state.scenario ? (
-            <aside className="context-panel">
-              <button
-                type="button"
-                className="context-end-button"
-                onClick={handleGenerateReport}
-                disabled={!state.sessionId || isBusy("generate-report")}
-                aria-busy={isBusy("generate-report")}
-              >
-                {isBusy("generate-report") ? "Gerando relatório…" : "Encerrar simulação"}
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <circle cx="8" cy="8" r="6" />
-                  <path d="M8 5v3l2 1.5" />
-                </svg>
-              </button>
-              {contextContent}
-            </aside>
-          ) : null}
-
-          {state.scenario ? (
-            <>
-              <div
-                className={`context-drawer-backdrop${drawerOpen ? " open" : ""}`}
-                onClick={() => setDrawerOpen(false)}
+            <button
+              type="button"
+              className="floating-end-session"
+              onClick={handleGenerateReport}
+              disabled={!state.sessionId || isBusy("generate-report")}
+              aria-busy={isBusy("generate-report")}
+            >
+              {isBusy("generate-report") ? "Gerando relatório…" : "Encerrar simulação"}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 aria-hidden="true"
-              />
-              <div
-                className={`context-drawer${drawerOpen ? " open" : ""}`}
-                role="dialog"
-                aria-modal="true"
-                aria-label="Detalhes do cliente"
               >
-                <div className="context-drawer-handle" aria-hidden="true" />
-                {contextContent}
-              </div>
-            </>
+                <circle cx="8" cy="8" r="6" />
+                <path d="M8 5v3l2 1.5" />
+              </svg>
+            </button>
           ) : null}
         </div>
       ) : screenPhase === "feedback_form" ? (
