@@ -1412,50 +1412,6 @@ export function SimulatorApp() {
             </section>
           ) : null}
 
-          <section className="fb-section">
-            <h2 className="fb-h2">Como foi essa simulação para você?</h2>
-            {state.feedbackSaved ? (
-              <div className="fb-success-card" role="status">Feedback registrado. Obrigado!</div>
-            ) : (
-              <form className="fb-form-card" onSubmit={handleFeedbackSubmit}>
-                <div className="fb-rating-grid">
-                  {FEEDBACK_FIELDS.map((field) => (
-                    <RatingInput
-                      key={field.name}
-                      name={field.name}
-                      label={field.label}
-                      value={feedbackScores[field.name]}
-                      disabled={isBusy("send-feedback")}
-                      onChange={(score) =>
-                        setFeedbackScores((current) => ({ ...current, [field.name]: score }))
-                      }
-                    />
-                  ))}
-                </div>
-                <label className="fb-field">
-                  <span>Comentário (opcional)</span>
-                  <textarea
-                    name="userFeedback"
-                    rows={3}
-                    maxLength={4000}
-                    placeholder="Como foi usar o simulador?"
-                    value={feedbackComment}
-                    onChange={(event) => setFeedbackComment(event.target.value)}
-                    disabled={isBusy("send-feedback")}
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="fb-btn fb-btn-primary"
-                  disabled={isBusy("send-feedback") || !feedbackIsValid()}
-                  aria-busy={isBusy("send-feedback")}
-                >
-                  {isBusy("send-feedback") ? "Salvando…" : "Salvar feedback"}
-                </button>
-              </form>
-            )}
-          </section>
-
           <div className="fb-btn-row">
             <button type="button" className="fb-btn fb-btn-primary" onClick={handleNewSimulation}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
