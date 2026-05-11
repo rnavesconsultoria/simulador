@@ -806,9 +806,14 @@ export function SimulatorApp() {
 
             <div className="welcome-hero">
               <img
-                src="/Logos/Vertical%20branco.svg"
+                src="/Logos/Horizontal%20preto%20transp.png"
                 alt="R Naves Consultoria"
-                className="welcome-hero-logo"
+                className="welcome-hero-logo-horizontal"
+              />
+              <img
+                src="/Logos/Vertical%20preto%20transp.png"
+                alt="R Naves Consultoria"
+                className="welcome-hero-logo-vertical"
               />
               <p className="welcome-hero-tagline">
                 IA R Naves — Sua especialista em treinamento de vendas

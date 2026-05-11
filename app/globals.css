@@ -468,31 +468,38 @@ button:disabled {
 
 .welcome-hero {
   margin: 18px 28px 0;
-  padding: 26px 28px;
+  padding: 24px 28px 22px;
   border-radius: 16px;
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(20, 184, 166, 0.18), transparent 55%),
-    linear-gradient(135deg, #0f172a, #111d3a);
-  border: 1px solid var(--line);
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 22px;
+  text-align: center;
+  gap: 14px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
 }
 
-.welcome-hero-logo {
-  height: 78px;
+.welcome-hero-logo-horizontal {
+  height: 48px;
   width: auto;
-  flex-shrink: 0;
+  display: block;
+}
+
+.welcome-hero-logo-vertical {
+  height: 120px;
+  width: auto;
+  display: block;
 }
 
 .welcome-hero-tagline {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 500;
   line-height: 1.4;
-  color: var(--text-strong);
+  color: #1f2937;
   letter-spacing: 0.01em;
 }
 
@@ -1115,17 +1122,19 @@ button:disabled {
   .welcome-hero {
     margin: 14px 16px 0;
     padding: 18px 18px;
-    flex-direction: column;
-    text-align: center;
-    gap: 14px;
+    gap: 12px;
   }
 
-  .welcome-hero-logo {
-    height: 60px;
+  .welcome-hero-logo-horizontal {
+    height: 36px;
+  }
+
+  .welcome-hero-logo-vertical {
+    height: 92px;
   }
 
   .welcome-hero-tagline {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .main {
