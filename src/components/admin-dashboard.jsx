@@ -21,8 +21,8 @@ function loadStoredSession() {
 const LEVEL_LABEL = { "1": "Júnior", "2": "Pleno", "3": "Sênior" };
 const INITIAL_FILTERS = { from: "", to: "", company_id: "", user_id: "", level: "" };
 
-function formatBRL(value) {
-  if (value == null || !Number.isFinite(Number(value))) return "—";
+function formatMoney(value) {
+  if (value == null || !Number.isFinite(Number(value))) return "US$ 0,00";
   return Number(value).toLocaleString("pt-BR", {
     style: "currency",
     currency: "USD",
@@ -32,13 +32,13 @@ function formatBRL(value) {
 }
 
 function formatNumber(value) {
-  if (value == null) return "—";
+  if (value == null) return "0";
   return Number(value).toLocaleString("pt-BR");
 }
 
 function formatScore(value) {
-  if (value == null || !Number.isFinite(Number(value))) return "—";
-  return Number(value).toFixed(1);
+  if (value == null || !Number.isFinite(Number(value))) return null;
+  return Number(value);
 }
 
 function formatDateBR(iso) {
@@ -64,6 +64,213 @@ function toCsv(rows) {
     ...rows.map((r) => headers.map((h) => escape(r[h])).join(";"))
   ].join("\n");
 }
+
+const STATUS_CONFIG = {
+  completed: { label: "Completa", className: "is-completed" },
+  scenario_ready: { label: "Cenário pronto", className: "is-ready" },
+  in_progress: { label: "Em andamento", className: "is-progress" },
+  authenticated: { label: "Autenticada", className: "is-ready" },
+  failed: { label: "Falha", className: "is-failed" },
+  created: { label: "Criada", className: "is-ready" }
+};
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.scenario_ready;
+  return (
+    <span className={`dash-status ${cfg.className}`}>
+      <span className="dash-status-dot" aria-hidden="true" />
+      {cfg.label}
+    </span>
+  );
+}
+
+const LEVEL_CONFIG = {
+  Sênior: "is-senior",
+  Pleno: "is-pleno",
+  Júnior: "is-junior"
+};
+
+function LevelBadge({ level }) {
+  const label = LEVEL_LABEL[String(level)] ?? "—";
+  const cls = LEVEL_CONFIG[label] ?? "";
+  return <span className={`dash-level ${cls}`}>{label}</span>;
+}
+
+function ScoreCell({ value }) {
+  const n = formatScore(value);
+  if (n == null) return <span className="dash-score-empty">—</span>;
+  let tone = "dash-score-rose";
+  if (n >= 7) tone = "dash-score-green";
+  else if (n >= 4) tone = "dash-score-amber";
+  return <strong className={`dash-score-cell ${tone}`}>{n.toFixed(1)}</strong>;
+}
+
+function GlassCard({ children, className = "", delay = 0, style }) {
+  return (
+    <section
+      className={`dash-card ${className}`}
+      style={{ animationDelay: `${delay}ms`, ...style }}
+    >
+      {children}
+    </section>
+  );
+}
+
+function SectionTitle({ children, subtitle }) {
+  return (
+    <header className="dash-section-title">
+      <h2>{children}</h2>
+      {subtitle ? <p>{subtitle}</p> : null}
+    </header>
+  );
+}
+
+function PaceRadial({ score }) {
+  const pct = Math.max(0, Math.min(1, (Number(score) || 0) / 10));
+  const r = 54;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - pct);
+  return (
+    <div className="dash-pace-radial">
+      <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+        <circle
+          cx="60"
+          cy="60"
+          r={r}
+          fill="none"
+          stroke="#14b8a6"
+          strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          transform="rotate(-90 60 60)"
+          style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(0.23,1,0.32,1)" }}
+        />
+      </svg>
+      <div className="dash-pace-radial-value">
+        <span>{Number.isFinite(Number(score)) ? Number(score).toFixed(1) : "—"}</span>
+        <em>de 10</em>
+      </div>
+    </div>
+  );
+}
+
+function PaceBar({ letter, label, score, color }) {
+  const n = Number(score) || 0;
+  const pct = Math.max(0, Math.min(100, (n / 10) * 100));
+  return (
+    <div className="dash-pace-bar">
+      <span className="dash-pace-letter" style={{ background: `${color}26`, color }}>
+        {letter}
+      </span>
+      <div className="dash-pace-bar-body">
+        <div className="dash-pace-bar-head">
+          <span>{label}</span>
+          <strong>{Number.isFinite(n) ? n.toFixed(1) : "—"}</strong>
+        </div>
+        <div className="dash-pace-bar-track">
+          <div className="dash-pace-bar-fill" style={{ width: `${pct}%`, background: color }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LineChart({ series, labels }) {
+  const W = 600;
+  const H = 240;
+  const pad = { t: 24, r: 16, b: 30, l: 36 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+  const allVals = series.flatMap((s) => s.data);
+  const maxV = Math.max(...allVals, 1);
+  const minV = 0;
+  const range = maxV - minV || 1;
+  const toX = (i, total) =>
+    pad.l + (total === 1 ? plotW / 2 : (i / (total - 1)) * plotW);
+  const toY = (v) => pad.t + plotH - ((v - minV) / range) * plotH;
+  const gridLines = [0, 2.5, 5, 7.5, 10].filter((v) => v <= maxV + 1);
+
+  if (labels.length === 0 || series.length === 0) {
+    return <p className="dash-empty">Sem dados no recorte atual.</p>;
+  }
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="dash-chart" role="img">
+      {gridLines.map((v) => (
+        <g key={v}>
+          <line
+            x1={pad.l}
+            y1={toY(v)}
+            x2={W - pad.r}
+            y2={toY(v)}
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="1"
+          />
+          <text
+            x={pad.l - 8}
+            y={toY(v) + 4}
+            fill="#64748b"
+            fontSize="10"
+            textAnchor="end"
+          >
+            {v}
+          </text>
+        </g>
+      ))}
+      {labels.map((lbl, i) => (
+        <text
+          key={lbl + i}
+          x={toX(i, labels.length)}
+          y={H - 6}
+          fill="#64748b"
+          fontSize="10"
+          textAnchor="middle"
+        >
+          {lbl}
+        </text>
+      ))}
+      {series.map((s, si) => {
+        const pts = s.data.map((v, i) => `${toX(i, s.data.length)},${toY(v)}`);
+        const line = pts.join(" ");
+        const areaPath = `M${pts[0]} ${pts.slice(1).map((p) => `L${p}`).join(" ")} L${toX(s.data.length - 1, s.data.length)},${pad.t + plotH} L${toX(0, s.data.length)},${pad.t + plotH} Z`;
+        return (
+          <g key={s.name + si}>
+            <defs>
+              <linearGradient id={`grad-${si}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
+                <stop offset="100%" stopColor={s.color} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={areaPath} fill={`url(#grad-${si})`} />
+            <polyline
+              points={line}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {s.data.map((v, i) => (
+              <circle
+                key={s.name + i}
+                cx={toX(i, s.data.length)}
+                cy={toY(v)}
+                r="4"
+                fill="#060b18"
+                stroke={s.color}
+                strokeWidth="2.5"
+              />
+            ))}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+const SERIES_COLORS = ["#14b8a6", "#8b5cf6", "#3b82f6", "#f59e0b", "#f43f5e", "#34d399"];
 
 export function AdminDashboard() {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
@@ -131,6 +338,22 @@ export function AdminDashboard() {
     };
   }, [data]);
 
+  const chart = useMemo(() => {
+    const rows = data?.sellerEvolution ?? [];
+    const labels = Array.from(new Set(rows.map((r) => r.day))).sort();
+    const sellers = Array.from(new Set(rows.map((r) => r.seller)));
+    const series = sellers.map((seller, idx) => ({
+      name: seller,
+      color: SERIES_COLORS[idx % SERIES_COLORS.length],
+      data: labels.map((day) => {
+        const point = rows.find((r) => r.seller === seller && r.day === day);
+        return Number.isFinite(Number(point?.average)) ? Number(point.average) : 0;
+      })
+    }));
+    const formattedLabels = labels.map((l) => l.slice(5));
+    return { labels: formattedLabels, series };
+  }, [data]);
+
   function applyDraft() {
     setFilters({ ...draft });
   }
@@ -146,8 +369,8 @@ export function AdminDashboard() {
       data: formatDateBR(s.date),
       vendedor: s.sellerName,
       empresa: s.company,
+      nivel: LEVEL_LABEL[String(s.sellerLevel)] ?? "",
       status: s.status,
-      fase: s.currentPhase ?? "",
       P: s.P ?? "",
       A: s.A ?? "",
       C: s.C ?? "",
@@ -187,13 +410,10 @@ export function AdminDashboard() {
     }
   }
 
-  // Don't decide auth state until we've checked localStorage on the client.
   if (!hydrated) {
     return (
-      <div className="admin-shell">
-        <div className="admin-empty">
-          <p>Carregando…</p>
-        </div>
+      <div className="dash-shell">
+        <div className="dash-loading">Carregando…</div>
       </div>
     );
   }
@@ -204,8 +424,8 @@ export function AdminDashboard() {
       return null;
     }
     return (
-      <div className="admin-shell">
-        <div className="admin-empty">
+      <div className="dash-shell">
+        <div className="dash-loading">
           <h1>Acesso restrito</h1>
           <p>
             É necessário estar autenticado como admin. <a href="/admin/login">Entrar</a>.
@@ -216,179 +436,213 @@ export function AdminDashboard() {
   }
 
   const totals = data?.totals;
-  const paceAverages = data?.paceAverages;
-  const sellerEvolution = data?.sellerEvolution ?? [];
-  const companyConsumption = data?.companyConsumption ?? [];
+  const paceAverages = data?.paceAverages ?? {};
+  const companies = data?.companyConsumption ?? [];
   const simulations = data?.simulations ?? [];
 
   return (
-    <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <img src="/Logos/vertical-black.png" alt="R Naves Consultoria" />
-        </div>
+    <div className="dash-shell">
+      <div className="dash-bg" aria-hidden="true">
+        <div className="dash-bg-gradient" />
+        <div className="dash-bg-glow-teal" />
+        <div className="dash-bg-glow-purple" />
+      </div>
 
-        <div className="admin-filter">
-          <label>
-            <span>De</span>
-            <input
-              type="date"
-              value={draft.from}
-              onChange={(e) => setDraft((d) => ({ ...d, from: e.target.value }))}
-            />
-          </label>
-          <label>
-            <span>Até</span>
-            <input
-              type="date"
-              value={draft.to}
-              onChange={(e) => setDraft((d) => ({ ...d, to: e.target.value }))}
-            />
-          </label>
-        </div>
-
-        <label className="admin-filter-block">
-          <span>Empresa</span>
-          <select
-            value={draft.company_id}
-            onChange={(e) => setDraft((d) => ({ ...d, company_id: e.target.value }))}
-          >
-            <option value="">Todas</option>
-            {filterOptions.companies.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="admin-filter-block">
-          <span>Vendedor</span>
-          <select
-            value={draft.user_id}
-            onChange={(e) => setDraft((d) => ({ ...d, user_id: e.target.value }))}
-          >
-            <option value="">Todos</option>
-            {filterOptions.sellers.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="admin-filter-block">
-          <span>Senioridade</span>
-          <select
-            value={draft.level}
-            onChange={(e) => setDraft((d) => ({ ...d, level: e.target.value }))}
-          >
-            <option value="">Todas</option>
-            <option value="1">Júnior</option>
-            <option value="2">Pleno</option>
-            <option value="3">Sênior</option>
-          </select>
-        </label>
-
-        <div className="admin-actions">
-          <button type="button" className="admin-btn admin-btn-primary" onClick={applyDraft}>
-            Aplicar filtros
+      <div className="dash-container">
+        <header className="dash-header">
+          <div className="dash-brand">
+            <img src="/Logos/vertical-white.svg" alt="R Naves Consultoria" />
+            <div>
+              <h1>
+                Painel do <span className="dash-brand-accent">Gestor</span>
+              </h1>
+              <p>Visão consolidada das simulações</p>
+            </div>
+          </div>
+          <button type="button" className="dash-logout" onClick={signOut}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M8.5 1.5H4a1.5 1.5 0 00-1.5 1.5v8A1.5 1.5 0 004 12.5h4.5M9 9.5L12 7 9 4.5M5 7h7" />
+            </svg>
+            Sair
           </button>
-          <button type="button" className="admin-btn" onClick={clearAll}>
-            Limpar filtros
-          </button>
-          <button
-            type="button"
-            className="admin-btn admin-btn-secondary"
-            onClick={exportCsv}
-            disabled={!simulations.length}
-          >
-            Exportar CSV
-          </button>
-        </div>
+        </header>
 
-        <div className="admin-sidebar-footer">
-          <button type="button" className="admin-btn admin-btn-ghost" onClick={signOut}>
-            Sair / trocar de conta
-          </button>
-        </div>
-      </aside>
-
-      <main className="admin-main">
         {error ? (
-          <div className="admin-error">
+          <div className="dash-error">
             <span>{error}</span>
             {/admin access required|forbidden/i.test(error) ? (
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={signOut}>
-                Sair e entrar com outra conta
+              <button type="button" className="dash-error-action" onClick={signOut}>
+                Entrar com outra conta
               </button>
             ) : null}
           </div>
         ) : null}
 
-        <section className="admin-kpis">
-          <div className="admin-kpi">
-            <div className="admin-kpi-label">Simulações</div>
-            <div className="admin-kpi-value">{formatNumber(totals?.simulations)}</div>
+        <div className="dash-filterbar">
+          <div className="dash-filterbar-label">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M1.5 3.5h11M3 7h8M5 10.5h4" />
+            </svg>
+            Filtros
           </div>
-          <div className="admin-kpi">
-            <div className="admin-kpi-label">Moderador</div>
-            <div className="admin-kpi-value">{formatNumber(totals?.moderationFlags)}</div>
-          </div>
-          <div className="admin-kpi">
-            <div className="admin-kpi-label">Tokens usados</div>
-            <div className="admin-kpi-value">{formatNumber(totals?.tokensUsed)}</div>
-          </div>
-          <div className="admin-kpi">
-            <div className="admin-kpi-label">Custos OpenAI</div>
-            <div className="admin-kpi-value">{formatBRL(totals?.openaiCost)}</div>
-          </div>
-          <div className="admin-kpi admin-kpi-accent">
-            <div className="admin-kpi-label">PACE médio</div>
-            <div className="admin-kpi-value">{formatScore(totals?.avgPace)}</div>
-          </div>
-        </section>
+          <div className="dash-filterbar-divider" aria-hidden="true" />
 
-        <section className="admin-grid-2">
-          <div className="admin-card">
-            <h3>Evolução dos vendedores</h3>
-            {sellerEvolution.length === 0 ? (
-              <p className="admin-empty-inline">Sem dados no recorte atual.</p>
-            ) : (
-              <SellerEvolutionChart data={sellerEvolution} />
-            )}
-          </div>
+          <input
+            type="date"
+            value={draft.from}
+            onChange={(e) => setDraft((d) => ({ ...d, from: e.target.value }))}
+            aria-label="Data inicial"
+          />
+          <span className="dash-filterbar-sep">até</span>
+          <input
+            type="date"
+            value={draft.to}
+            onChange={(e) => setDraft((d) => ({ ...d, to: e.target.value }))}
+            aria-label="Data final"
+          />
 
-          <div className="admin-card">
-            <h3>Consumo por empresa</h3>
-            {companyConsumption.length === 0 ? (
-              <p className="admin-empty-inline">Sem dados no recorte atual.</p>
-            ) : (
-              <CompanyConsumption data={companyConsumption} />
-            )}
-          </div>
-        </section>
+          <div className="dash-filterbar-divider" aria-hidden="true" />
 
-        <section className="admin-card">
-          <h3>Médias PACE no recorte</h3>
-          <div className="admin-pace-row">
-            {[
-              { key: "P", label: "Preparação" },
-              { key: "A", label: "Análise" },
-              { key: "C", label: "Cocriação" },
-              { key: "E", label: "Engajamento" }
-            ].map((p) => (
-              <div key={p.key} className="admin-pace-cell">
-                <span className="admin-pace-label">{p.label}</span>
-                <strong>{formatScore(paceAverages?.[p.key])}</strong>
-              </div>
+          <select
+            value={draft.company_id}
+            onChange={(e) => setDraft((d) => ({ ...d, company_id: e.target.value }))}
+            aria-label="Empresa"
+          >
+            <option value="">Todas empresas</option>
+            {filterOptions.companies.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
-          </div>
-        </section>
+          </select>
 
-        <section className="admin-card admin-card-table">
-          <div className="admin-card-head">
-            <h3>Simulações ({simulations.length})</h3>
-            {loading ? <span className="admin-loading">Carregando…</span> : null}
+          <select
+            value={draft.user_id}
+            onChange={(e) => setDraft((d) => ({ ...d, user_id: e.target.value }))}
+            aria-label="Vendedor"
+          >
+            <option value="">Todos vendedores</option>
+            {filterOptions.sellers.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={draft.level}
+            onChange={(e) => setDraft((d) => ({ ...d, level: e.target.value }))}
+            aria-label="Senioridade"
+          >
+            <option value="">Todas senioridades</option>
+            <option value="1">Júnior</option>
+            <option value="2">Pleno</option>
+            <option value="3">Sênior</option>
+          </select>
+
+          <div className="dash-filterbar-spacer" />
+
+          <button type="button" className="dash-filterbar-apply" onClick={applyDraft}>
+            Aplicar
+          </button>
+          <button type="button" className="dash-filterbar-ghost" onClick={clearAll}>
+            Limpar
+          </button>
+          <button
+            type="button"
+            className="dash-filterbar-ghost"
+            onClick={exportCsv}
+            disabled={!simulations.length}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M2 6h8M6 2v8" />
+            </svg>
+            Exportar CSV
+          </button>
+        </div>
+
+        <div className="dash-kpis">
+          <div className="dash-kpi">
+            <div className="dash-kpi-label">Simulações</div>
+            <div className="dash-kpi-value">{formatNumber(totals?.simulations)}</div>
           </div>
-          <div className="admin-table-wrap">
-            <table className="admin-table">
+          <div className="dash-kpi">
+            <div className="dash-kpi-label">Moderadas</div>
+            <div className="dash-kpi-value">{formatNumber(totals?.moderationFlags)}</div>
+          </div>
+          <div className="dash-kpi">
+            <div className="dash-kpi-label">Tokens usados</div>
+            <div className="dash-kpi-value">{formatNumber(totals?.tokensUsed)}</div>
+          </div>
+          <div className="dash-kpi">
+            <div className="dash-kpi-label">Custos OpenAI</div>
+            <div className="dash-kpi-value">{formatMoney(totals?.openaiCost)}</div>
+          </div>
+          <div className="dash-kpi dash-kpi-accent">
+            <div className="dash-kpi-bubble" aria-hidden="true" />
+            <div className="dash-kpi-label">PACE médio</div>
+            <div className="dash-kpi-value">
+              {Number.isFinite(Number(totals?.avgPace)) ? Number(totals.avgPace).toFixed(1) : "—"}
+            </div>
+          </div>
+        </div>
+
+        <div className="dash-grid-main">
+          <GlassCard delay={100}>
+            <div className="dash-card-head">
+              <SectionTitle subtitle="Últimas datas do recorte">Evolução dos vendedores</SectionTitle>
+              <div className="dash-legend">
+                {chart.series.map((s) => (
+                  <span key={s.name}>
+                    <i style={{ background: s.color }} />
+                    {s.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <LineChart series={chart.series} labels={chart.labels} />
+          </GlassCard>
+
+          <div className="dash-grid-right">
+            <GlassCard delay={200}>
+              <div className="dash-pace-row">
+                <PaceRadial score={totals?.avgPace} />
+                <div className="dash-pace-bars">
+                  <PaceBar letter="P" label="Preparação" score={paceAverages.P} color="#14b8a6" />
+                  <PaceBar letter="A" label="Análise" score={paceAverages.A} color="#3b82f6" />
+                  <PaceBar letter="C" label="Cocriação" score={paceAverages.C} color="#8b5cf6" />
+                  <PaceBar letter="E" label="Engajamento" score={paceAverages.E} color="#f59e0b" />
+                </div>
+              </div>
+            </GlassCard>
+
+            <GlassCard delay={300}>
+              <SectionTitle>Consumo por empresa</SectionTitle>
+              {companies.length === 0 ? (
+                <p className="dash-empty">Sem dados no recorte atual.</p>
+              ) : (
+                <ul className="dash-companies">
+                  {companies.map((c, idx) => (
+                    <li key={c.company}>
+                      <span className="dash-company-dot" style={{ background: SERIES_COLORS[idx % SERIES_COLORS.length] }} />
+                      <span className="dash-company-name">{c.company}</span>
+                      <span className="dash-company-meta">
+                        <strong>{formatMoney(c.cost)}</strong>
+                        <em>{c.simulations} sim.</em>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </GlassCard>
+          </div>
+        </div>
+
+        <GlassCard className="dash-card-table" delay={400}>
+          <div className="dash-card-head">
+            <SectionTitle subtitle={`${simulations.length} registros no recorte`}>
+              Simulações
+            </SectionTitle>
+            {loading ? <span className="dash-loading-inline">Atualizando…</span> : null}
+          </div>
+          <div className="dash-table-wrap">
+            <table className="dash-table">
               <thead>
                 <tr>
                   <th>Data</th>
@@ -400,159 +654,41 @@ export function AdminDashboard() {
                   <th className="num">C</th>
                   <th className="num">E</th>
                   <th className="num">Média</th>
-                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {simulations.map((s) => (
-                  <tr key={s.id}>
-                    <td>{formatDateBR(s.date)}</td>
-                    <td>{s.sellerName}</td>
-                    <td>{s.company}</td>
-                    <td>{LEVEL_LABEL[String(s.sellerLevel)] ?? "—"}</td>
-                    <td className="num">{formatScore(s.P)}</td>
-                    <td className="num">{formatScore(s.A)}</td>
-                    <td className="num">{formatScore(s.C)}</td>
-                    <td className="num">{formatScore(s.E)}</td>
-                    <td className="num"><strong>{formatScore(s.Media)}</strong></td>
-                    <td>{s.status}</td>
-                  </tr>
-                ))}
                 {simulations.length === 0 && !loading ? (
                   <tr>
-                    <td colSpan={10} className="admin-empty-inline">
+                    <td colSpan={10} className="dash-empty-row">
                       Nenhuma simulação encontrada nesse recorte.
                     </td>
                   </tr>
-                ) : null}
+                ) : (
+                  simulations.map((s) => (
+                    <tr key={s.id}>
+                      <td>{formatDateBR(s.date)}</td>
+                      <td className="bold">{s.sellerName}</td>
+                      <td>{s.company}</td>
+                      <td>
+                        <LevelBadge level={s.sellerLevel} />
+                      </td>
+                      <td className="num"><ScoreCell value={s.P} /></td>
+                      <td className="num"><ScoreCell value={s.A} /></td>
+                      <td className="num"><ScoreCell value={s.C} /></td>
+                      <td className="num"><ScoreCell value={s.E} /></td>
+                      <td className="num"><ScoreCell value={s.Media} /></td>
+                      <td style={{ textAlign: "right" }}>
+                        <StatusBadge status={s.status} />
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        </section>
-      </main>
+        </GlassCard>
+      </div>
     </div>
-  );
-}
-
-function SellerEvolutionChart({ data }) {
-  // Group by seller, build series
-  const grouped = useMemo(() => {
-    const bySeller = new Map();
-    for (const point of data) {
-      if (!bySeller.has(point.seller)) bySeller.set(point.seller, []);
-      bySeller.get(point.seller).push(point);
-    }
-    return Array.from(bySeller.entries()).map(([seller, points]) => ({
-      seller,
-      points: points.sort((a, b) => (a.day < b.day ? -1 : 1))
-    }));
-  }, [data]);
-
-  const days = useMemo(() => {
-    const set = new Set();
-    for (const p of data) set.add(p.day);
-    return Array.from(set).sort();
-  }, [data]);
-
-  if (days.length === 0) return null;
-  const width = 480;
-  const height = 200;
-  const padding = { top: 12, right: 12, bottom: 28, left: 32 };
-  const innerW = width - padding.left - padding.right;
-  const innerH = height - padding.top - padding.bottom;
-  const xStep = days.length > 1 ? innerW / (days.length - 1) : innerW;
-  const yMax = 10;
-  const colors = ["#14b8a6", "#6366f1", "#f59e0b", "#f43f5e", "#10b981", "#8b5cf6"];
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="admin-chart" role="img">
-      {[0, 2.5, 5, 7.5, 10].map((y) => (
-        <g key={y}>
-          <line
-            x1={padding.left}
-            x2={width - padding.right}
-            y1={padding.top + innerH - (y / yMax) * innerH}
-            y2={padding.top + innerH - (y / yMax) * innerH}
-            stroke="#e5e7eb"
-            strokeWidth="0.5"
-          />
-          <text
-            x={padding.left - 6}
-            y={padding.top + innerH - (y / yMax) * innerH + 4}
-            textAnchor="end"
-            fontSize="10"
-            fill="#6b7280"
-          >
-            {y}
-          </text>
-        </g>
-      ))}
-      {days.map((d, i) => (
-        <text
-          key={d}
-          x={padding.left + i * xStep}
-          y={height - 6}
-          textAnchor="middle"
-          fontSize="9"
-          fill="#6b7280"
-        >
-          {d.slice(5)}
-        </text>
-      ))}
-      {grouped.map((series, idx) => {
-        const color = colors[idx % colors.length];
-        const points = series.points
-          .map((p) => {
-            const i = days.indexOf(p.day);
-            const x = padding.left + i * xStep;
-            const y = padding.top + innerH - (p.average / yMax) * innerH;
-            return `${x},${y}`;
-          })
-          .join(" ");
-        return (
-          <g key={series.seller}>
-            <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" />
-            {series.points.map((p) => {
-              const i = days.indexOf(p.day);
-              const x = padding.left + i * xStep;
-              const y = padding.top + innerH - (p.average / yMax) * innerH;
-              return <circle key={`${series.seller}-${p.day}`} cx={x} cy={y} r="2.5" fill={color} />;
-            })}
-          </g>
-        );
-      })}
-      <g>
-        {grouped.map((s, idx) => (
-          <g key={s.seller} transform={`translate(${padding.left + idx * 110}, ${padding.top - 2})`}>
-            <circle cx="0" cy="0" r="4" fill={colors[idx % colors.length]} />
-            <text x="8" y="3" fontSize="10" fill="#374151">{s.seller}</text>
-          </g>
-        ))}
-      </g>
-    </svg>
-  );
-}
-
-function CompanyConsumption({ data }) {
-  const max = Math.max(...data.map((d) => d.cost), 0.0001);
-  return (
-    <ul className="admin-bars">
-      {data.map((c) => (
-        <li key={c.company}>
-          <div className="admin-bars-head">
-            <span>{c.company}</span>
-            <span className="admin-bars-value">
-              {formatBRL(c.cost)} · {c.simulations} sim.
-            </span>
-          </div>
-          <div className="admin-bars-track">
-            <div
-              className="admin-bars-fill"
-              style={{ width: `${(c.cost / max) * 100}%` }}
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
   );
 }

@@ -8,9 +8,11 @@ export function LoginScreen({
   devCode,
   isRequesting,
   isVerifying,
+  bannerError,
   onSubmitEmail,
   onSubmitCode,
-  onBack
+  onBack,
+  onDismissError
 }) {
   function handleEmailSubmit(event) {
     event.preventDefault();
@@ -51,6 +53,17 @@ export function LoginScreen({
                 Treine técnicas de negociação consultiva com cenários reais e receba avaliação personalizada.
               </p>
             </header>
+
+            {bannerError ? (
+              <div className="login-error" role="alert">
+                <span>{bannerError}</span>
+                {onDismissError ? (
+                  <button type="button" onClick={onDismissError} aria-label="Fechar aviso">
+                    ✕
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
 
             <form className="login-form" onSubmit={handleEmailSubmit}>
               <div className="login-field">
@@ -117,6 +130,17 @@ export function LoginScreen({
                 <span>
                   Dev: <strong>{devCode}</strong>
                 </span>
+              </div>
+            ) : null}
+
+            {bannerError ? (
+              <div className="login-error" role="alert">
+                <span>{bannerError}</span>
+                {onDismissError ? (
+                  <button type="button" onClick={onDismissError} aria-label="Fechar aviso">
+                    ✕
+                  </button>
+                ) : null}
               </div>
             ) : null}
 

@@ -779,11 +779,15 @@ export function SimulatorApp() {
           devCode={state.devCode}
           isRequesting={isBusy("request-code")}
           isVerifying={isBusy("verify-code")}
+          bannerError={state.bannerError}
+          onDismissError={clearError}
           onSubmitEmail={handleRequestCode}
           onSubmitCode={handleVerifyCode}
-          onBack={() =>
-            setState((c) => ({ ...c, email: "", devCode: "" })) || setMessageInput("")
-          }
+          onBack={() => {
+            clearError();
+            setState((c) => ({ ...c, email: "", devCode: "" }));
+            setMessageInput("");
+          }}
         />
       ) : screenPhase === "simulation" ? (
         <div className={`simulation-stage${state.scenario ? "" : " no-aside"}`}>
