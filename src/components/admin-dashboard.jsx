@@ -454,11 +454,9 @@ export function AdminDashboard() {
 
       <div className="dash-container">
         <header className="dash-header">
-          <img
-            src="/Logos/horizontal-white.svg"
-            alt="R Naves Consultoria"
-            className="dash-header-logo"
-          />
+          <span className="dash-header-logo">
+            <img src="/Logos/horizontal-black.png" alt="R Naves Consultoria" />
+          </span>
           <div className="dash-header-title">
             <h1>
               Painel do <span className="dash-brand-accent">Gestor</span>
