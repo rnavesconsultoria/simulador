@@ -77,6 +77,15 @@ export const env = {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
   },
+  get resendApiKey() {
+    return readEnv("RESEND_API_KEY", { fallback: "" });
+  },
+  get emailFrom() {
+    return readEnv("EMAIL_FROM", { fallback: "RNaves Simulador <onboarding@resend.dev>" });
+  },
+  get appBaseUrl() {
+    return readEnv("APP_BASE_URL", { fallback: "http://localhost:3000" });
+  },
   get showDevelopmentCodePreview() {
     return readBooleanEnv("SHOW_DEVELOPMENT_CODE_PREVIEW", false);
   },

@@ -5,6 +5,7 @@ import {
   hashAccessCode,
   hashAppSessionToken
 } from "../lib/app-session-token.js";
+import { sendMagicLinkEmail } from "../lib/email.js";
 import { getSupabaseAdmin } from "../lib/supabase-admin.js";
 
 function generateNumericCode(length = 6) {
@@ -81,6 +82,18 @@ export async function requestAccessCode(email) {
   if (error) {
     throw new Error(`Failed to create access code: ${error.message}`);
   }
+
+  // Fire-and-forget e-mail dispatch via Resend. We don't block the API on this:
+  // the dev preview pill and the manual code entry still work if the e-mail
+  // service is unavailable. Errors are logged but never raised.
+  const magicUrl = `${env.appBaseUrl.replace(/\/$/, "")}/auth/verify?email=${encodeURIComponent(user.email)}&code=${encodeURIComponent(code)}`;
+  sendMagicLinkEmail({ to: user.email, name: user.name, code, magicUrl })
+    .then((result) => {
+      if (!result.ok && result.reason !== "missing_api_key") {
+        console.warn(`[auth] magic link e-mail failed for ${user.email}:`, result.error ?? result.status);
+      }
+    })
+    .catch((err) => console.warn(`[auth] magic link dispatch error:`, err?.message ?? err));
 
   return {
     ok: true,

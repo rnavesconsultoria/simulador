@@ -861,10 +861,17 @@ export function SimulatorApp() {
                     </p>
                   </>
                 ) : flowStep === "awaiting_code" ? (
-                  <p>
-                    Perfeito! Acabei de te enviar um código por e-mail. Cole o código no campo
-                    abaixo para validarmos seu acesso. Estamos quase começando.
-                  </p>
+                  <>
+                    <p>
+                      <strong>Acabei de te enviar um e-mail.</strong> Clique no botão{" "}
+                      <em>Entrar no simulador</em> dentro do e-mail para entrar direto, ou cole o
+                      código de 6 dígitos no campo abaixo.
+                    </p>
+                    <p className="welcome-copy-muted">
+                      Não chegou em alguns segundos? Confira a caixa de spam ou tente outro
+                      e-mail.
+                    </p>
+                  </>
                 ) : flowStep === "creating_scenario" ? (
                   <>
                     <p>

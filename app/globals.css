@@ -566,6 +566,66 @@ button:disabled {
   font-size: 14px;
 }
 
+.magic-verifier {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.magic-verifier-card {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow);
+}
+
+.magic-verifier-logo {
+  height: 80px;
+  width: auto;
+}
+
+.magic-verifier-card h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.magic-verifier-msg {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.magic-verifier-error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--danger);
+  line-height: 1.5;
+}
+
+.magic-verifier-link {
+  font-size: 14px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.magic-verifier-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 720px) {
   .welcome-copy {
     margin: 14px 16px 0;
